@@ -10,21 +10,21 @@ namespace Compressor
     {
         private static void Main(string[] args)
         {
-            string inputPath = @"C:\BevzOD\Video\Stand.Up.36.SATRip.avi";
-            string outputPath = @"C:\BevzOD\Video\Stand.Up.36.SATRip.avi.gz";
-            string decompessedPath = @"C:\BevzOD\Video\Stand.Up.36.SATRip2.avi";
+            string inputPath = @"C:\BevzOD\Video\data.txt";
+            string outputPath = @"C:\BevzOD\Video\data.txt.gz";
+            string decompessedPath = @"C:\BevzOD\Video\data2.txt";
 
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
             var compressor = new Compressor();
-
             compressor.Compress(inputPath, outputPath);
 
-            var t1 = stopWatch.Elapsed;
             stopWatch.Reset();
             stopWatch.Start();
-            compressor.Decompress(outputPath, decompessedPath);
+
+            var decompressor = new Decompressor();
+            decompressor.Decompress(outputPath, decompessedPath);
             var t2 = stopWatch.Elapsed;
             stopWatch.Stop();
         }
