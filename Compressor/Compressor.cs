@@ -10,6 +10,10 @@ namespace Compressor
     {
         private const long BLOCK_SIZE = 10 * 1024;
 
+        private List<int> compressedBlockSizes = new List<int>();
+
+        private List<int> compressedBlockSizes2 = new List<int>();
+
         public void Compress(string inputPath, string outputPath)
         {
             using (var inputStream = File.OpenRead(inputPath))
@@ -37,6 +41,8 @@ namespace Compressor
                             compressedBuffer = GetBufferWithoutZeroTail(memoryStream);
                         }
 
+                        compressedBlockSizes.Add(compressedBuffer.Length);
+
                         outputStream.Write(compressedBuffer, 0, compressedBuffer.Length);
                         outputStream.Flush();
 
@@ -61,6 +67,13 @@ namespace Compressor
                     while (totalBytesCount > currentBytesCount)
                     {
                         var buffer = ReadNextGZipBlock(inputStream);
+
+                        compressedBlockSizes2.Add(buffer.Length);
+
+                        if (compressedBlockSizes[compressedBlockSizes2.Count - 1] != buffer.Length)
+                        {
+                            
+                        }
 
                         currentBytesCount = inputStream.Position;
 
@@ -87,11 +100,14 @@ namespace Compressor
                     }
                 }
             }
+
+            var blocksCountIsEqual = compressedBlockSizes.Count == compressedBlockSizes2.Count;
+            var sizesAreEqual = compressedBlockSizes.SequenceEqual(compressedBlockSizes2);
         }
 
         public byte[] ReadNextGZipBlock(Stream inputStream)
         {
-            byte[] gzipHeader = new byte[] { 31, 139, 8 };
+            byte[] gzipHeader = new byte[] { 31, 139, 8, 0, 0, 0, 0, 0, 4, 0 };
 
             var buffer = new List<byte>();
             long startPosition = inputStream.Position;
@@ -101,14 +117,24 @@ namespace Compressor
                 var currentByte = (byte) inputStream.ReadByte();
                 buffer.Add(currentByte);
 
-                if (inputStream.Position > startPosition + gzipHeader.Length &&
-                    buffer[buffer.Count - 1] == gzipHeader[2] &&
-                    buffer[buffer.Count - 2] == gzipHeader[1] &&
-                    buffer[buffer.Count - 3] == gzipHeader[0])
+                if (inputStream.Position > startPosition + gzipHeader.Length)
                 {
-                    inputStream.Position -= gzipHeader.Length;
-                    buffer.RemoveRange(buffer.Count - gzipHeader.Length, gzipHeader.Length);
-                    break;
+                    bool bufferEndsWithGZipFooter = true;
+                    for (int i = 0; i < gzipHeader.Length; i++)
+                    {
+                        if (buffer[buffer.Count - 1 - i] != gzipHeader[gzipHeader.Length - 1 - i])
+                        {
+                            bufferEndsWithGZipFooter = false;
+                            break;
+                        }
+                    }
+
+                    if (bufferEndsWithGZipFooter)
+                    {
+                        inputStream.Position -= gzipHeader.Length;
+                        buffer.RemoveRange(buffer.Count - gzipHeader.Length, gzipHeader.Length);
+                        break;
+                    }
                 }
             }
             return buffer.ToArray();
