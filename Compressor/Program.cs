@@ -1,31 +1,50 @@
-﻿using System.Diagnostics;
-using System.IO;
-using System.IO.Compression;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
+﻿using System;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Threading;
 
 namespace Compressor
 {
     internal class Program
     {
+        private static Stopwatch stopWatch = new Stopwatch();
+
         private static void Main(string[] args)
         {
-            string inputPath = @"C:\BevzOD\Video\data.txt";
-            string outputPath = @"C:\BevzOD\Video\data.txt.gz";
-            string decompessedPath = @"C:\BevzOD\Video\data2.txt";
+            string inputPath = @"C:\BevzOD\Video\Stand.Up.36.SATRip.avi";
+            string outputPath = @"C:\BevzOD\Video\Stand.Up.36.SATRip.avi.gz";
+            string decompessedPath = @"C:\BevzOD\Video\Stand.Up.36.SATRip2.avi";
 
-            var stopWatch = new Stopwatch();
             stopWatch.Start();
 
-            var compressor = new Compressor();
-            compressor.Compress(inputPath, outputPath);
+            var compressor = new Decompressor();
+            //var compressor = new Compressor();
+            compressor.ThreadsCount = 5;
+            compressor.ProgressChanged += OnProgressChanged;
+            compressor.Completed += OnCompressorCompleted;
+            compressor.Execute(outputPath, decompessedPath);
+            //compressor.Execute(inputPath, outputPath);
 
-            stopWatch.Reset();
-            stopWatch.Start();
+            Thread.Sleep(TimeSpan.FromMinutes(1).Milliseconds);
+            
+            //compressor.Execute(outputPath, decompessedPath);
 
-            var decompressor = new Decompressor();
-            decompressor.Decompress(outputPath, decompessedPath);
-            var t2 = stopWatch.Elapsed;
+            //stopWatch.Start();
+
+            //var decompressor = new Decompressor();
+            //decompressor.Decompress(outputPath, decompessedPath);
+            //var t2 = stopWatch.Elapsed;
+            //stopWatch.Stop();
+        }
+
+        private static void OnProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            Console.WriteLine(string.Format("{0:F3} %", e.ProgressPercentage * 100));
+        }
+
+        private static void OnCompressorCompleted(object sender, CompletedEventArgs e)
+        {
+            var t1 = stopWatch.Elapsed;
             stopWatch.Stop();
         }
     }
