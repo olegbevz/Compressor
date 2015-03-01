@@ -46,6 +46,9 @@ namespace Compressor
                     return startPosition + arrayIndexes[0];
                 }
 
+                if (inputStream.Position == inputStream.Length)
+                    return inputStream.Length;
+
                 inputStream.Position -= blockHeader.Length;
             }
 

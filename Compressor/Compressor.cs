@@ -13,9 +13,6 @@ namespace Compressor
 
         public Compressor()
         {
-            readInputStreamThread = new Thread(ReadInputStream);
-            writeOutputStreamThread = new Thread(WriteOutputStream);
-
             BlockSize = DEFAULT_BLOCK_SIZE;
         }
 
@@ -61,14 +58,44 @@ namespace Compressor
             }
         }
 
-        protected override long[] CalculateBlockIndexes(Stream inputStream)
+        protected override void ReadInputStream()
         {
-            var buffersCount = (int)Math.Ceiling((double)inputStream.Length / DEFAULT_BLOCK_SIZE);
+            try
+            {
+                Debug.WriteLine("Read input stream thread with id " + Thread.CurrentThread.ManagedThreadId + " was started .");
 
-            return Enumerable.Range(0, buffersCount).Select(x => x * DEFAULT_BLOCK_SIZE).ToArray();
+                long[] blockIndexes;
+
+                using (var inputStream = File.OpenRead(inputPath))
+                {
+                    inputStreamLength = inputStream.Length;
+                    readenBytesCount = 0;
+                    totalBuffersCount = (int)Math.Ceiling((double)inputStream.Length / DEFAULT_BLOCK_SIZE);
+                    blockIndexes = Enumerable.Range(0, totalBuffersCount).Select(x => x * DEFAULT_BLOCK_SIZE).ToArray();
+                }
+
+                for (int i = 0; i < blockIndexes.Length; i++)
+                {
+                    if (cancellationPending)
+                        break;
+
+                    var blockIndex = i;
+
+                    long blockLength = i < blockIndexes.Length - 1
+                        ? blockIndexes[i + 1] - blockIndexes[i]
+                        : inputStreamLength - blockIndexes[i];
+
+                    threadScheduler.Enqueue(() => { CompressBlock(blockIndexes[blockIndex], (int)blockLength, blockIndex); });
+                }
+            }
+            catch (Exception ex)
+            {
+                innerExceptions.Add(ex);
+                Cancel();
+            }
         }
 
-        protected override void TransformStreamBuffer(long streamStartIndex, int blockLength, int blockOrder)
+        protected void CompressBlock(long streamStartIndex, int blockLength, int blockOrder)
         {
             try
             {
@@ -105,7 +132,6 @@ namespace Compressor
             catch (Exception ex)
             {
                 innerExceptions.Add(ex);
-
                 Cancel();
             }
         }

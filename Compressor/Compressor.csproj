@@ -48,6 +48,7 @@
     <Compile Include="CompressionBase.cs" />
     <Compile Include="Compressor.cs" />
     <Compile Include="Decompressor.cs" />
+    <Compile Include="ICompressionUnit.cs" />
     <Compile Include="OrderedQueue.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProgressChangedEventArgs.cs" />

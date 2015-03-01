@@ -7,11 +7,10 @@ using System.Threading;
 
 namespace Compressor
 {
-    public abstract class CompressionBase
+    public abstract class CompressionBase : ICompressionUnit
     {
-        private const int DEFAULT_THREADS_COUNT = 4;
-
-
+        private const int DEFAULT_THREADS_COUNT = 5;
+        
         protected Thread readInputStreamThread;
         protected Thread writeOutputStreamThread;
         protected string inputPath;
@@ -20,7 +19,6 @@ namespace Compressor
         protected readonly OrderedQueue<byte[]> bufferQueue = new OrderedQueue<byte[]>();
         protected readonly List<Exception> innerExceptions = new List<Exception>();
         protected readonly ThreadScheduler threadScheduler = new ThreadScheduler(4);
-
 
         protected long inputStreamLength;
         protected long readenBytesCount;
@@ -43,6 +41,9 @@ namespace Compressor
 
         public void Execute(string inputPath, string outputPath)
         {
+            if (!File.Exists(inputPath))
+                throw new FileNotFoundException(inputPath);
+
             this.inputPath = inputPath;
             this.outputPath = outputPath;
 
@@ -52,42 +53,9 @@ namespace Compressor
             writeOutputStreamThread.Start();
         }
 
-        protected virtual void ReadInputStream()
-        {
-            try
-            {
-                Debug.WriteLine("Read input stream thread with id " + Thread.CurrentThread.ManagedThreadId + " was started .");
+        protected abstract void ReadInputStream();
 
-                long[] blockIndexes;
-
-                using (var inputStream = File.OpenRead(inputPath))
-                {
-                    inputStreamLength = inputStream.Length;
-                    readenBytesCount = 0;
-                    blockIndexes = CalculateBlockIndexes(inputStream);
-                    totalBuffersCount = blockIndexes.Length;
-                }
-
-                for (int i = 0; i < blockIndexes.Length; i++)
-                {
-                    var blockIndex = i;
-
-                    long blockLength = i < blockIndexes.Length - 1
-                        ? blockIndexes[i + 1] - blockIndexes[i]
-                        : inputStreamLength - blockIndexes[i];
-
-                    threadScheduler.Enqueue(() => { TransformStreamBuffer(blockIndexes[blockIndex], (int)blockLength, blockIndex); });
-                }
-            }
-            catch (Exception ex)
-            {
-                innerExceptions.Add(ex);
-
-                Cancel();
-            }
-        }
-
-        protected virtual void WriteOutputStream()
+        private void WriteOutputStream()
         {
             try
             {
@@ -97,9 +65,7 @@ namespace Compressor
                 {
                     while (readInputStreamThread.IsAlive || 
                         bufferQueue.Count > 0 || 
-                        threadScheduler.CurrentThreadsCount > 0 || 
-                        readenBytesCount < inputStreamLength ||
-                        compressedBuffersCount < totalBuffersCount)
+                        threadScheduler.CurrentThreadsCount > 0)
                     {
                         if (cancellationPending)
                             break;
@@ -134,13 +100,7 @@ namespace Compressor
 
             ReportCompletion();
         }
-
-        protected abstract long[] CalculateBlockIndexes(Stream inputStream);
-
-        //protected abstract long GetNextBlockIndex(Stream inputStream);
-
-        protected abstract void TransformStreamBuffer(long streamStartIndex, int blockLength, int blockOrder);
-
+        
         public void Cancel()
         {
             cancellationPending = true;

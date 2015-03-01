@@ -7,37 +7,36 @@ namespace Compressor
     {
         public static CompletedEventArgs Success()
         {
-            return new CompletedEventArgs(true, false, false, null);
+            return new CompletedEventArgs(CompletionStatus.Successed, null);
         }
 
         public static CompletedEventArgs Cancell()
         {
-            return new CompletedEventArgs(false, true, false, null);
+            return new CompletedEventArgs(CompletionStatus.Cancelled, null);
         }
 
         public static CompletedEventArgs Fault(List<Exception> exceptions)
         {
-            return new CompletedEventArgs(false, false, true, exceptions);
+            return new CompletedEventArgs(CompletionStatus.Faulted, exceptions);
         }
 
         private CompletedEventArgs(
-            bool isSuccessed, 
-            bool isCancelled, 
-            bool isFaulted, 
+            CompletionStatus status,
             List<Exception> exceptions)
         {
-            IsSuccessed = isSuccessed;
-            IsCancelled = isCancelled;
-            IsFaulted = isFaulted;
+            Status = status;
             Exceptions = exceptions;
         }
 
-        public bool IsSuccessed { get; private set; }
-
-        public bool IsCancelled { get; private set; }
-
-        public bool IsFaulted { get; private set; }
+        public CompletionStatus Status { get; private set; }
 
         public List<Exception> Exceptions { get; private set; }
+    }
+
+    public enum CompletionStatus
+    {
+        Successed,
+        Cancelled,
+        Faulted
     }
 }

@@ -1,51 +1,122 @@
 ﻿using System;
-using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
 
 namespace Compressor
 {
     internal class Program
     {
-        private static Stopwatch stopWatch = new Stopwatch();
+        private static readonly Stopwatch stopWatch = new Stopwatch();
+        private static readonly AutoResetEvent autoResetEvent = new AutoResetEvent(false);
+        private static readonly object consoleLock = new object();
 
-        private static void Main(string[] args)
+        private static ICompressionUnit compressionUnit;
+        private static int cursorPositionLeftForProgress;
+        private static int cursorPositionTopForProgress;
+
+        private static int Main(string[] args)
         {
-            string inputPath = @"C:\BevzOD\Video\Stand.Up.36.SATRip.avi";
-            string outputPath = @"C:\BevzOD\Video\Stand.Up.36.SATRip.avi.gz";
-            string decompessedPath = @"C:\BevzOD\Video\Stand.Up.36.SATRip2.avi";
+            try
+            {
+                Console.WriteLine("Compression utility.");
+                if (args.Length != 3)
+                {
+                    ShowHelp();
+                    return 1;
+                }
 
-            stopWatch.Start();
+                var currentDirectory = Directory.GetCurrentDirectory();
+                var inputFileName = Path.Combine(currentDirectory, args[1]);
+                var ouitputFileName = Path.Combine(currentDirectory, args[2]);
 
-            var compressor = new Decompressor();
-            //var compressor = new Compressor();
-            compressor.ThreadsCount = 5;
-            compressor.ProgressChanged += OnProgressChanged;
-            compressor.Completed += OnCompressorCompleted;
-            compressor.Execute(outputPath, decompessedPath);
-            //compressor.Execute(inputPath, outputPath);
+                switch (args[0])
+                {
+                    case "compress":
+                        compressionUnit = new Compressor();
+                        Console.WriteLine("Compression started.");
+                        break;
+                    case "decompress":
+                        compressionUnit = new Decompressor();
+                        Console.WriteLine("Decompression started.");
+                        break;
+                    default:
+                        ShowHelp();
+                        return 1;
+                }
 
-            Thread.Sleep(TimeSpan.FromMinutes(1).Milliseconds);
-            
-            //compressor.Execute(outputPath, decompessedPath);
+                cursorPositionLeftForProgress = Console.CursorLeft;
+                cursorPositionTopForProgress = Console.CursorTop;
 
-            //stopWatch.Start();
+                Console.CancelKeyPress += OnConsoleCancelKeyPressed;
 
-            //var decompressor = new Decompressor();
-            //decompressor.Decompress(outputPath, decompessedPath);
-            //var t2 = stopWatch.Elapsed;
-            //stopWatch.Stop();
+                compressionUnit.ProgressChanged += OnProgressChanged;
+                compressionUnit.Completed += OnCompressorCompleted;
+
+                stopWatch.Start();
+                compressionUnit.Execute(inputFileName, ouitputFileName);
+
+                // Блокируем основной поток приложения до завершения операции.
+                autoResetEvent.WaitOne();
+                
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return 1;
+            }
         }
 
-        private static void OnProgressChanged(object sender, ProgressChangedEventArgs e)
+        private static void OnConsoleCancelKeyPressed(object sender, ConsoleCancelEventArgs e)
         {
-            Console.WriteLine(string.Format("{0:F3} %", e.ProgressPercentage * 100));
+            if (compressionUnit != null)
+            {
+                compressionUnit.Cancel();
+            }
         }
 
-        private static void OnCompressorCompleted(object sender, CompletedEventArgs e)
+        private static void OnProgressChanged(object sender, ProgressChangedEventArgs args)
         {
-            var t1 = stopWatch.Elapsed;
+            lock (consoleLock)
+            {
+                Console.SetCursorPosition(cursorPositionLeftForProgress, cursorPositionTopForProgress);
+                Console.WriteLine(string.Format("{0:F3} %", args.ProgressPercentage * 100));
+            }
+        }
+
+        private static void OnCompressorCompleted(object sender, CompletedEventArgs args)
+        {
+            var elapsedTime = stopWatch.Elapsed;
             stopWatch.Stop();
+
+            switch (args.Status)
+            {
+                case CompletionStatus.Successed:
+                    Console.WriteLine("Operation completed successfully.");
+                    Console.WriteLine(string.Format(@"Time spent: {0}.", elapsedTime));
+                    break;
+                case CompletionStatus.Cancelled:
+                    Console.WriteLine("Operation has been canceled.");
+                    break;
+                case CompletionStatus.Faulted:
+                    Console.WriteLine("Operation failed.");
+                    foreach (var exception in args.Exceptions)
+                    {
+                        Console.WriteLine(exception.Message);
+                    }
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            autoResetEvent.Set();
+        }
+
+        private static void ShowHelp()
+        {
+            Console.WriteLine("Compress file: Compressor.exe compress [source file name] [archive file name].");
+            Console.WriteLine("Decompress file: Compressor.exe decompress [archive file name] [source file name].");
         }
     }
 }
