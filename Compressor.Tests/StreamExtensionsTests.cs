@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.IO;
 using NUnit.Framework;
 
 namespace Compressor.Tests
@@ -16,7 +11,6 @@ namespace Compressor.Tests
         {
             var inputBuffer = new byte[] { 31, 139, 8, 1, 2, 3, 31, 139, 8, 4, 5, 6, 31, 139, 8, 7 };
             var blockHeader = new byte[] { 31, 139, 8 };
-
 
             using (var memoryStream = new MemoryStream(inputBuffer))
             {

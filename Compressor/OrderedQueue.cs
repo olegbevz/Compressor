@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Threading;
 
 namespace Compressor
 {
@@ -11,48 +13,107 @@ namespace Compressor
     /// независимо от того, в каком порядке элементы добавлялись в очередь. 
     /// </summary>
     /// <typeparam name="T">Тип элементов очереди</typeparam>
-    public class OrderedQueue<T> where T : class
+    public class OrderedQueue<T>
     {
-        private readonly Dictionary<int, T> innerDictionary 
-            = new Dictionary<int, T>();
+        private readonly Dictionary<QueueOrder, T> queueDictionary 
+            = new Dictionary<QueueOrder, T>();
 
-        private int currentIndex = 0;
+        private readonly Dictionary<int, int> subOrderLimits 
+            = new Dictionary<int, int>(); 
+
+        private int currentOrder;
+
+        private int currentSubOrder;
+
+        private readonly object innerLock = new object();
 
         public int Count
         {
-            get { return innerDictionary.Count; }
+            get { return queueDictionary.Count; }
         }
 
-        public int CurrentOrder
+        public void SetLastSubOrder(int order, int subOrder)
         {
-            get { return currentIndex; }
+            subOrderLimits[order] = subOrder;
         }
 
         public void Enqueue(int order, T item)
         {
-            if (innerDictionary.ContainsKey(order))
+            Enqueue(order, 0, item, true);
+        }
+
+        public void Enqueue(int order, int subOrder, T item, bool lastSubOrder = false)
+        {
+            var queueOrder = new QueueOrder(order, subOrder);
+
+            if (queueDictionary.ContainsKey(queueOrder))
                 throw new Exception("Item with the same order already exists in queue.");
 
-            if (order < currentIndex)
+            if (order < currentOrder)
                 throw new Exception("Item with the same order already have been in queue and was dequeued.");
 
-            innerDictionary.Add(order, item);
+            if (order == currentOrder && subOrder < currentSubOrder)
+                throw new Exception("Item with the same order already have been in queue and was dequeued.");
 
-            Debug.WriteLine(string.Format("OrderedQueue: an item with order {0} was enqueued.", order));
+            if (lastSubOrder && subOrderLimits.ContainsKey(order))
+                throw new Exception("Order already has last sub order");
+
+            lock (innerLock)
+            {
+                queueDictionary.Add(queueOrder, item);
+            }
+
+            if (lastSubOrder)
+                subOrderLimits.Add(order, subOrder);
+
+            Debug.WriteLine(string.Format("OrderedQueue: an item with order {0} {1} was enqueued.", queueOrder.Order, queueOrder.SubOrder));
         }
 
         public bool TryDequeue(out T item)
         {
-            if (innerDictionary.TryGetValue(currentIndex, out item))
-            {
-                Debug.WriteLine(string.Format("OrderedQueue: an item with order {0} was dequeued.", currentIndex));
+            var queueOrder = new QueueOrder(currentOrder, currentSubOrder);
 
-                innerDictionary.Remove(currentIndex);
-                currentIndex++;
-                return true;
+            lock (innerLock)
+            {
+                if (queueDictionary.TryGetValue(queueOrder, out item))
+                {
+                    Debug.WriteLine(string.Format("OrderedQueue: an item with order {0} {1} was dequeued.", currentOrder, currentSubOrder));
+
+                    queueDictionary.Remove(queueOrder);
+
+                    if (subOrderLimits.ContainsKey(currentOrder) && currentSubOrder == subOrderLimits[currentOrder])
+                    {
+                        Interlocked.Increment(ref currentOrder);
+                        currentSubOrder = 0;
+                    }
+                    else
+                    {
+                        Interlocked.Increment(ref currentSubOrder);
+                    }
+
+                    return true;
+                }
             }
 
+            item = default(T);
             return false;
+        }
+
+        private struct QueueOrder
+        {
+            public QueueOrder(int order, int subOrder = 0)
+            {
+                Order = order;
+                SubOrder = subOrder;
+            }
+
+            public int Order;
+            public int SubOrder;
+
+            public override string ToString()
+            {
+                return string.Format("{0} {1}", Order, SubOrder);
+            }
         }
     }
 }

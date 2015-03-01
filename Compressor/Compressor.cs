@@ -18,61 +18,17 @@ namespace Compressor
 
         public long BlockSize { get; set; }
 
-        public void Compress(string inputPath, string outputPath)
-        {
-            using (var inputStream = File.OpenRead(inputPath))
-            {
-                using (var outputStream = File.OpenWrite(outputPath))
-                {
-                    long totalBytesCount = inputStream.Length;
-                    long currentBytesCount = 0;
-
-                    while (totalBytesCount > currentBytesCount)
-                    {
-                        var buffer = new byte[DEFAULT_BLOCK_SIZE];
-                        var bytesRead = inputStream.Read(buffer, 0, buffer.Length);
-                        currentBytesCount += bytesRead;
-
-                        byte[] compressedBuffer = null;
-
-                        using (var memoryStream = new MemoryStream())
-                        {
-                            using (var compressStream = new GZipStream(memoryStream, CompressionMode.Compress, true))
-                            {
-                                compressStream.Write(buffer, 0, bytesRead);
-                            }
-
-                            compressedBuffer = memoryStream.GetBufferWithoutZeroTail();
-                        }
-
-                        outputStream.Write(compressedBuffer, 0, compressedBuffer.Length);
-                        outputStream.Flush();
-
-                        // Размер буфера превышает ограничение сборщика мусора 8 Кб, 
-                        // необходимо вручную очистить данные буфера из Large Object Heap 
-                        GC.Collect();
-
-                        Console.WriteLine(((double) currentBytesCount/(double) totalBytesCount*100) + " %");
-                    }
-                }
-            }
-        }
-
         protected override void ReadInputStream()
         {
             try
             {
                 Debug.WriteLine("Read input stream thread with id " + Thread.CurrentThread.ManagedThreadId + " was started .");
 
-                long[] blockIndexes;
-
-                using (var inputStream = File.OpenRead(inputPath))
-                {
-                    inputStreamLength = inputStream.Length;
-                    readenBytesCount = 0;
-                    totalBuffersCount = (int)Math.Ceiling((double)inputStream.Length / DEFAULT_BLOCK_SIZE);
-                    blockIndexes = Enumerable.Range(0, totalBuffersCount).Select(x => x * DEFAULT_BLOCK_SIZE).ToArray();
-                }
+                var inputFileInfo = new FileInfo(inputPath);
+                inputStreamLength = inputFileInfo.Length;
+                readenBytesCount = 0;
+                totalBuffersCount = (int)Math.Ceiling((double)inputFileInfo.Length / DEFAULT_BLOCK_SIZE);
+                var blockIndexes = Enumerable.Range(0, totalBuffersCount).Select(x => x * DEFAULT_BLOCK_SIZE).ToArray();
 
                 for (int i = 0; i < blockIndexes.Length; i++)
                 {
@@ -99,8 +55,6 @@ namespace Compressor
         {
             try
             {
-                //Debug.WriteLine("Transform readen buffer with id " + Thread.CurrentThread.ManagedThreadId + " was started.");
-
                 byte[] readenBuffer = new byte[blockLength];
 
                 using (var inputStream = File.OpenRead(inputPath))
@@ -128,6 +82,10 @@ namespace Compressor
                 ReportProgress();
 
                 bufferQueue.Enqueue(blockOrder, compressedBuffer);
+
+                // Размер буфера превышает ограничение сборщика мусора 8 Кб, 
+                // необходимо вручную очистить данные буфера из Large Object Heap 
+                GC.Collect();
             }
             catch (Exception ex)
             {

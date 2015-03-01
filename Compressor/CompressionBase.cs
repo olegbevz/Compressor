@@ -10,6 +10,7 @@ namespace Compressor
     public abstract class CompressionBase : ICompressionUnit
     {
         private const int DEFAULT_THREADS_COUNT = 5;
+        private const int WRITE_OUTPUT_STREAM_INTERVAL = 100;
         
         protected Thread readInputStreamThread;
         protected Thread writeOutputStreamThread;
@@ -78,10 +79,7 @@ namespace Compressor
                                 outputStream.Write(buffer, 0, buffer.Length);
                                 outputStream.Flush();
 
-                                if (writtenBuffersCount != bufferQueue.CurrentOrder - 1)
-                                    throw new Exception("Not ordered writing to the output file.");
-
-                                writtenBuffersCount = bufferQueue.CurrentOrder;
+                                Interlocked.Increment(ref writtenBuffersCount);
 
                                 // Размер буфера превышает ограничение сборщика мусора 8 Кб, 
                                 // необходимо вручную очистить данные буфера из Large Object Heap 
@@ -90,6 +88,8 @@ namespace Compressor
                                 ReportProgress();
                             }
                         }
+
+                        Thread.Sleep(WRITE_OUTPUT_STREAM_INTERVAL);
                     }
                 }
             }

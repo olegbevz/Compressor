@@ -1,9 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Threading;
 
 namespace Compressor
@@ -12,7 +10,7 @@ namespace Compressor
     {
         private readonly byte[] gzipHeader = new byte[] { 31, 139, 8, 0, 0, 0, 0, 0, 4, 0 };
 
-        private const int DECOMPRESS_BUFFER_SIZE = 1*1024*1024;
+        private const int DECOMPRESS_BUFFER_SIZE = 10 * 1024 * 1024;
 
         protected override void ReadInputStream()
         {
@@ -26,20 +24,26 @@ namespace Compressor
                     readenBytesCount = 0;
                     int blockOrder = 0;
 
-                    while (inputStream.Position < inputStream.Length)
+                    // Если файл не начинается со стандартного заголовка, значит архив был создан с помощью сторонней программы.
+                    // В этом случае разбить файл на отдельные части не удастся, выполняем распаковку архива в одном потоке.
+                    if (!inputStream.StartsWith(gzipHeader))
                     {
-                        if (cancellationPending)
-                            break;
+                        DecompressBlock(0, 0);
+                    }
+                    else
+                    {
+                        while (inputStream.Position < inputStream.Length)
+                        {
+                            if (cancellationPending)
+                                break;
 
-                        var nextBlockIndex = inputStream.GetNextBlockIndex(gzipHeader);
-                        //if (nextBlockIndex == inputStreamLength)
-                            //throw new Exception("GZip archive was compressed by another program.");
+                            var nextBlockIndex = inputStream.GetNextBlockIndex(gzipHeader);
 
-                        var localBlockOrder = blockOrder;
+                            var localBlockOrder = blockOrder;
+                            threadScheduler.Enqueue(() => DecompressBlock(nextBlockIndex, localBlockOrder));
 
-                        threadScheduler.Enqueue(() => DecompressBlock(nextBlockIndex, localBlockOrder));
-
-                        blockOrder += 1;
+                            blockOrder += 1;
+                        }
                     }
                 }
             }
@@ -57,16 +61,27 @@ namespace Compressor
             {
                 inputStream.Seek(streamStartPosition, SeekOrigin.Begin);
 
-                using (var memoryStream = new MemoryStream())
+                using (var compressStream = new GZipStream(inputStream, CompressionMode.Decompress, true))
                 {
-                    using (var compressStream = new GZipStream(inputStream, CompressionMode.Decompress, true))
+                    int bytesRead;
+                    int bufferNumber = 0;
+                    do
                     {
-                        compressStream.CopyTo(memoryStream);
+                        byte[] buffer = new byte[DECOMPRESS_BUFFER_SIZE];
+                        bytesRead = compressStream.Read(buffer, 0, buffer.Length);
+                        if (bytesRead == 0)
+                            break;
 
-                        var uncompressedBuffer = memoryStream.GetBufferWithoutZeroTail();
+                        if (bytesRead < DECOMPRESS_BUFFER_SIZE)
+                        {
+                            Array.Resize(ref buffer, bytesRead);
+                        }
 
-                        bufferQueue.Enqueue(blockOrder, uncompressedBuffer);
-                    }
+                        bufferQueue.Enqueue(blockOrder, bufferNumber, buffer);
+                        bufferNumber++;
+                    } while (bytesRead > 0);
+
+                    bufferQueue.SetLastSubOrder(blockOrder, --bufferNumber);
                 }
             }
         }
