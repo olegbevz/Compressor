@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace Compressor
+namespace GZipCompressor
 {
     /// <summary>
     /// Набор вспомогательных методов для работы с потоками

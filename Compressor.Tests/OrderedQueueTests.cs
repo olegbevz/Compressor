@@ -1,6 +1,6 @@
 using NUnit.Framework;
 
-namespace Compressor.Tests
+namespace GZipCompressor.Tests
 {
     [TestFixture]
     public class OrderedQueueTests

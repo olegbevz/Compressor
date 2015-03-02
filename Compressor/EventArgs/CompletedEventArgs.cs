@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Compressor
+namespace GZipCompressor
 {
     public class CompletedEventArgs : EventArgs
     {
@@ -33,12 +33,5 @@ namespace Compressor
         public CompletionStatus Status { get; private set; }
 
         public List<Exception> Exceptions { get; private set; }
-    }
-
-    public enum CompletionStatus
-    {
-        Successed,
-        Cancelled,
-        Faulted
     }
 }

@@ -7,8 +7,8 @@
     <ProjectGuid>{1EC967D7-EA77-491D-8186-E643805037E7}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Compressor.Tests</RootNamespace>
-    <AssemblyName>Compressor.Tests</AssemblyName>
+    <RootNamespace>GZipCompressor.Tests</RootNamespace>
+    <AssemblyName>GZipCompressor.Tests</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -46,9 +46,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Compressor\Compressor.csproj">
+    <ProjectReference Include="..\Compressor\GZipCompressor.csproj">
       <Project>{7504b494-a386-45aa-b0a9-b2876897bfb9}</Project>
-      <Name>Compressor</Name>
+      <Name>GZipCompressor</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

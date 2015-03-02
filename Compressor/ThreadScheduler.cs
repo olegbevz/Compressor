@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 
-namespace Compressor
+namespace GZipCompressor
 {
     /// <summary>
     /// Планировщик потоков.

@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading;
 
-namespace Compressor
+namespace GZipCompressor
 {
     /// <summary>
     /// Упорядоченная очередь элементов.

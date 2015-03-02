@@ -2,18 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Threading;
 
-namespace Compressor
+namespace GZipCompressor
 {
     public abstract class CompressionBase : ICompressionUnit
     {
         private const int DEFAULT_THREADS_COUNT = 5;
         private const int WRITE_OUTPUT_STREAM_INTERVAL = 100;
         
-        protected Thread readInputStreamThread;
-        protected Thread writeOutputStreamThread;
+        private readonly Thread readInputStreamThread;
+        private readonly Thread writeOutputStreamThread;
+
         protected string inputPath;
         protected string outputPath;
         protected volatile bool cancellationPending;
@@ -27,7 +27,7 @@ namespace Compressor
         protected int compressedBuffersCount;
         protected int writtenBuffersCount;
 
-        public CompressionBase()
+        protected CompressionBase()
         {
             readInputStreamThread = new Thread(ReadInputStream);
             writeOutputStreamThread = new Thread(WriteOutputStream);

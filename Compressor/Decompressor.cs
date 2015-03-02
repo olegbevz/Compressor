@@ -4,7 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Threading;
 
-namespace Compressor
+namespace GZipCompressor
 {
     public class Decompressor : CompressionBase
     {
@@ -44,7 +44,9 @@ namespace Compressor
                             if (cancellationPending)
                                 break;
 
-                            var nextBlockIndex = inputStream.GetBufferIndex(gzipHeader);
+                            var nextBlockIndex = inputStream.GetBufferIndex(gzipHeader, 1 * 1024 * 1024);
+                            if (nextBlockIndex == -1)
+                                break;
 
                             readenBytesCount = nextBlockIndex;
                             ReportProgress();

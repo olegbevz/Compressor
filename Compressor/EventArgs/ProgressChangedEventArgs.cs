@@ -1,6 +1,6 @@
 using System;
 
-namespace Compressor
+namespace GZipCompressor
 {
     public class ProgressChangedEventArgs : EventArgs
     {

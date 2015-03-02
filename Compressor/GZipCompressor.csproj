@@ -7,8 +7,8 @@
     <ProjectGuid>{7504B494-A386-45AA-B0A9-B2876897BFB9}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Compressor</RootNamespace>
-    <AssemblyName>Compressor</AssemblyName>
+    <RootNamespace>GZipCompressor</RootNamespace>
+    <AssemblyName>GZipCompressor</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -39,14 +39,15 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CompletedEventArgs.cs" />
+    <Compile Include="EventArgs\CompletedEventArgs.cs" />
     <Compile Include="CompressionBase.cs" />
     <Compile Include="Compressor.cs" />
     <Compile Include="Decompressor.cs" />
+    <Compile Include="EventArgs\CompletionStatus.cs" />
     <Compile Include="ICompressionUnit.cs" />
     <Compile Include="OrderedQueue.cs" />
     <Compile Include="Program.cs" />
-    <Compile Include="ProgressChangedEventArgs.cs" />
+    <Compile Include="EventArgs\ProgressChangedEventArgs.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StreamExtensions.cs" />
     <Compile Include="ThreadScheduler.cs" />

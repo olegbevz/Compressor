@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using NUnit.Framework;
 
-namespace Compressor.Tests
+namespace GZipCompressor.Tests
 {
     [TestFixture]
     public class StreamExtensionsTests
