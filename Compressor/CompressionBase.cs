@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -81,8 +81,8 @@ namespace GZipCompressor
 
                                 Interlocked.Increment(ref writtenBuffersCount);
 
-                                // Размер буфера превышает ограничение сборщика мусора 8 Кб, 
-                                // необходимо вручную очистить данные буфера из Large Object Heap 
+                                // Р Р°Р·РјРµСЂ Р±СѓС„РµСЂР° РїСЂРµРІС‹С€Р°РµС‚ РѕРіСЂР°РЅРёС‡РµРЅРёРµ СЃР±РѕСЂС‰РёРєР° РјСѓСЃРѕСЂР° 8 РљР±, 
+                                // РЅРµРѕР±С…РѕРґРёРјРѕ РІСЂСѓС‡РЅСѓСЋ РѕС‡РёСЃС‚РёС‚СЊ РґР°РЅРЅС‹Рµ Р±СѓС„РµСЂР° РёР· Large Object Heap 
                                 GC.Collect();
 
                                 ReportProgress();
@@ -141,13 +141,13 @@ namespace GZipCompressor
         }
 
         /// <summary>
-        /// Расчет текущего процента выполнения операции.
+        /// Р Р°СЃС‡РµС‚ С‚РµРєСѓС‰РµРіРѕ РїСЂРѕС†РµРЅС‚Р° РІС‹РїРѕР»РЅРµРЅРёСЏ РѕРїРµСЂР°С†РёРё.
         /// </summary>
-        /// <returns>Процент выполнения в виде вещественного числа от 0.0 до 1.0</returns>
+        /// <returns>РџСЂРѕС†РµРЅС‚ РІС‹РїРѕР»РЅРµРЅРёСЏ РІ РІРёРґРµ РІРµС‰РµСЃС‚РІРµРЅРЅРѕРіРѕ С‡РёСЃР»Р° РѕС‚ 0.0 РґРѕ 1.0</returns>
         private double CalculateProgress()
         {
-            // Сохраняем локальные значения переменных, 
-            // на случай если значения будут изменены во время расчета
+            // РЎРѕС…СЂР°РЅСЏРµРј Р»РѕРєР°Р»СЊРЅС‹Рµ Р·РЅР°С‡РµРЅРёСЏ РїРµСЂРµРјРµРЅРЅС‹С…, 
+            // РЅР° СЃР»СѓС‡Р°Р№ РµСЃР»Рё Р·РЅР°С‡РµРЅРёСЏ Р±СѓРґСѓС‚ РёР·РјРµРЅРµРЅС‹ РІРѕ РІСЂРµРјСЏ СЂР°СЃС‡РµС‚Р°
             long localReadenBytesCount = readenBytesCount,
                 localInputStreamLength = inputStreamLength;
 
@@ -155,16 +155,16 @@ namespace GZipCompressor
                 localCompressedBuffersCount = compressedBuffersCount,
                 localWrittenBuffersCount = writtenBuffersCount;
 
-            // Рассчитываем процент считанных данных из исходного файла
+            // Р Р°СЃСЃС‡РёС‚С‹РІР°РµРј РїСЂРѕС†РµРЅС‚ СЃС‡РёС‚Р°РЅРЅС‹С… РґР°РЅРЅС‹С… РёР· РёСЃС…РѕРґРЅРѕРіРѕ С„Р°Р№Р»Р°
             var readInputStreamPercentage = (double)localReadenBytesCount / localInputStreamLength;
 
-            // Рассчитываем процент преобразованных данных
+            // Р Р°СЃСЃС‡РёС‚С‹РІР°РµРј РїСЂРѕС†РµРЅС‚ РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРЅС‹С… РґР°РЅРЅС‹С…
             var compressionPercentage = (double)localCompressedBuffersCount / localTotalBuffersCount;
 
-            // Рассчитываем процент записанных данных в выходной файл 
+            // Р Р°СЃСЃС‡РёС‚С‹РІР°РµРј РїСЂРѕС†РµРЅС‚ Р·Р°РїРёСЃР°РЅРЅС‹С… РґР°РЅРЅС‹С… РІ РІС‹С…РѕРґРЅРѕР№ С„Р°Р№Р» 
             var writeOutputStreamPercentage = (double)localWrittenBuffersCount / localTotalBuffersCount;
 
-            // Получаем общий процент выполнения операции как среднее арифметическое
+            // РџРѕР»СѓС‡Р°РµРј РѕР±С‰РёР№ РїСЂРѕС†РµРЅС‚ РІС‹РїРѕР»РЅРµРЅРёСЏ РѕРїРµСЂР°С†РёРё РєР°Рє СЃСЂРµРґРЅРµРµ Р°СЂРёС„РјРµС‚РёС‡РµСЃРєРѕРµ
             return (readInputStreamPercentage + compressionPercentage + writeOutputStreamPercentage) / 3;
         }
     }

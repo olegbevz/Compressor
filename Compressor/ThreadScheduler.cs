@@ -1,19 +1,19 @@
-using System;
+п»їusing System;
 using System.Diagnostics;
 using System.Threading;
 
 namespace GZipCompressor
 {
     /// <summary>
-    /// Планировщик потоков.
-    /// Гарантирует, что для выполнения задач будет запущено не более указанного количества потоков
+    /// РџР»Р°РЅРёСЂРѕРІС‰РёРє РїРѕС‚РѕРєРѕРІ.
+    /// Р“Р°СЂР°РЅС‚РёСЂСѓРµС‚, С‡С‚Рѕ РґР»СЏ РІС‹РїРѕР»РЅРµРЅРёСЏ Р·Р°РґР°С‡ Р±СѓРґРµС‚ Р·Р°РїСѓС‰РµРЅРѕ РЅРµ Р±РѕР»РµРµ СѓРєР°Р·Р°РЅРЅРѕРіРѕ РєРѕР»РёС‡РµСЃС‚РІР° РїРѕС‚РѕРєРѕРІ
     /// </summary>
     public class ThreadScheduler
     {
         private const int TIME_INTERVAL = 100;
 
         /// <summary>
-        /// Счетчик запущенных потоков
+        /// РЎС‡РµС‚С‡РёРє Р·Р°РїСѓС‰РµРЅРЅС‹С… РїРѕС‚РѕРєРѕРІ
         /// </summary>
         private int currentThreadsCount = 0;
 
@@ -23,7 +23,7 @@ namespace GZipCompressor
         }
 
         /// <summary>
-        /// Максимальное число потоков
+        /// РњР°РєСЃРёРјР°Р»СЊРЅРѕРµ С‡РёСЃР»Рѕ РїРѕС‚РѕРєРѕРІ
         /// </summary>
         public int MaxThreads { get; set; }
 
@@ -33,20 +33,20 @@ namespace GZipCompressor
         }
 
         /// <summary>
-        /// Выполнить действие в отдельном потоке.
-        /// Если было достигнуто максимальное количество потоков
-        /// планировщик ожидает завершения одного из запущенных потоков.
+        /// Р’С‹РїРѕР»РЅРёС‚СЊ РґРµР№СЃС‚РІРёРµ РІ РѕС‚РґРµР»СЊРЅРѕРј РїРѕС‚РѕРєРµ.
+        /// Р•СЃР»Рё Р±С‹Р»Рѕ РґРѕСЃС‚РёРіРЅСѓС‚Рѕ РјР°РєСЃРёРјР°Р»СЊРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ РїРѕС‚РѕРєРѕРІ
+        /// РїР»Р°РЅРёСЂРѕРІС‰РёРє РѕР¶РёРґР°РµС‚ Р·Р°РІРµСЂС€РµРЅРёСЏ РѕРґРЅРѕРіРѕ РёР· Р·Р°РїСѓС‰РµРЅРЅС‹С… РїРѕС‚РѕРєРѕРІ.
         /// </summary>
-        /// <param name="threadAction">Выполняемое действие</param>
+        /// <param name="threadAction">Р’С‹РїРѕР»РЅСЏРµРјРѕРµ РґРµР№СЃС‚РІРёРµ</param>
         public void Enqueue(Action threadAction)
         {
             WaitForAvailableThreads();
 
-            // Запускаем действие в отдельном потоке
+            // Р—Р°РїСѓСЃРєР°РµРј РґРµР№СЃС‚РІРёРµ РІ РѕС‚РґРµР»СЊРЅРѕРј РїРѕС‚РѕРєРµ
             var thread = new Thread(ExceuteThread);
             thread.Start(threadAction);
 
-            // Увеличиваем счетчик запущенных потоков
+            // РЈРІРµР»РёС‡РёРІР°РµРј СЃС‡РµС‚С‡РёРє Р·Р°РїСѓС‰РµРЅРЅС‹С… РїРѕС‚РѕРєРѕРІ
             Interlocked.Increment(ref currentThreadsCount);
 
             Debug.WriteLine(string.Format("Thread started. Current threads count: {0}.", currentThreadsCount));
@@ -66,7 +66,7 @@ namespace GZipCompressor
             if (threadAction != null)
                 threadAction();
 
-            // Уменьшаем счетчик запущенных потоков
+            // РЈРјРµРЅСЊС€Р°РµРј СЃС‡РµС‚С‡РёРє Р·Р°РїСѓС‰РµРЅРЅС‹С… РїРѕС‚РѕРєРѕРІ
             Interlocked.Decrement(ref currentThreadsCount);
 
             Debug.WriteLine(string.Format("Thread disposed. Current threads count: {0}.", currentThreadsCount));

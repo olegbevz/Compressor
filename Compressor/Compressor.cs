@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -79,8 +79,8 @@ namespace GZipCompressor
                     compressedBuffer = memoryStream.GetBufferWithoutZeroTail();
                 }
 
-                // Размер буфера превышает ограничение сборщика мусора 8 Кб, 
-                // необходимо вручную очистить данные буфера из Large Object Heap 
+                // Р Р°Р·РјРµСЂ Р±СѓС„РµСЂР° РїСЂРµРІС‹С€Р°РµС‚ РѕРіСЂР°РЅРёС‡РµРЅРёРµ СЃР±РѕСЂС‰РёРєР° РјСѓСЃРѕСЂР° 8 РљР±, 
+                // РЅРµРѕР±С…РѕРґРёРјРѕ РІСЂСѓС‡РЅСѓСЋ РѕС‡РёСЃС‚РёС‚СЊ РґР°РЅРЅС‹Рµ Р±СѓС„РµСЂР° РёР· Large Object Heap 
                 GC.Collect();
 
                 bufferQueue.Enqueue(blockOrder, compressedBuffer);

@@ -1,24 +1,24 @@
-using System.Collections.Generic;
+п»їusing System.Collections.Generic;
 using System.IO;
 
 namespace GZipCompressor
 {
     /// <summary>
-    /// Набор вспомогательных методов для работы с потоками
+    /// РќР°Р±РѕСЂ РІСЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹С… РјРµС‚РѕРґРѕРІ РґР»СЏ СЂР°Р±РѕС‚С‹ СЃ РїРѕС‚РѕРєР°РјРё
     /// </summary>
     public static class StreamExtensions
     {
         /// <summary>
-        /// Размер блока для чтения потока байтов
+        /// Р Р°Р·РјРµСЂ Р±Р»РѕРєР° РґР»СЏ С‡С‚РµРЅРёСЏ РїРѕС‚РѕРєР° Р±Р°Р№С‚РѕРІ
         /// </summary>
         private const int DEFAULT_READ_BLOCK_SIZE = 1024;
 
         /// <summary>
-        /// Получить массив байтов из потока в памяти.
-        /// В отличие от метода MemoryStream::GetBuffer метод при больших объемах данных 
-        /// возвращает массив байтов без нулевых байтов в конце.
+        /// РџРѕР»СѓС‡РёС‚СЊ РјР°СЃСЃРёРІ Р±Р°Р№С‚РѕРІ РёР· РїРѕС‚РѕРєР° РІ РїР°РјСЏС‚Рё.
+        /// Р’ РѕС‚Р»РёС‡РёРµ РѕС‚ РјРµС‚РѕРґР° MemoryStream::GetBuffer РјРµС‚РѕРґ РїСЂРё Р±РѕР»СЊС€РёС… РѕР±СЉРµРјР°С… РґР°РЅРЅС‹С… 
+        /// РІРѕР·РІСЂР°С‰Р°РµС‚ РјР°СЃСЃРёРІ Р±Р°Р№С‚РѕРІ Р±РµР· РЅСѓР»РµРІС‹С… Р±Р°Р№С‚РѕРІ РІ РєРѕРЅС†Рµ.
         /// </summary>
-        /// <param name="memoryStream">Поток в памяти</param>
+        /// <param name="memoryStream">РџРѕС‚РѕРє РІ РїР°РјСЏС‚Рё</param>
         /// <returns></returns>
         public static byte[] GetBufferWithoutZeroTail(this MemoryStream memoryStream)
         {
@@ -30,11 +30,11 @@ namespace GZipCompressor
         }
 
         /// <summary>
-        /// Поток начинается с указанного массива байтов.
+        /// РџРѕС‚РѕРє РЅР°С‡РёРЅР°РµС‚СЃСЏ СЃ СѓРєР°Р·Р°РЅРЅРѕРіРѕ РјР°СЃСЃРёРІР° Р±Р°Р№С‚РѕРІ.
         /// </summary>
-        /// <param name="inputStream">Поток байтов</param>
-        /// <param name="buffer">Массив байтов</param>
-        /// <returns>Поток байтов начи нается указанного массива байтов</returns>
+        /// <param name="inputStream">РџРѕС‚РѕРє Р±Р°Р№С‚РѕРІ</param>
+        /// <param name="buffer">РњР°СЃСЃРёРІ Р±Р°Р№С‚РѕРІ</param>
+        /// <returns>РџРѕС‚РѕРє Р±Р°Р№С‚РѕРІ РЅР°С‡Рё РЅР°РµС‚СЃСЏ СѓРєР°Р·Р°РЅРЅРѕРіРѕ РјР°СЃСЃРёРІР° Р±Р°Р№С‚РѕРІ</returns>
         public static bool StartsWith(this Stream inputStream, byte[] buffer)
         {
             byte[] streamBuffer = new byte[buffer.Length];
@@ -51,12 +51,12 @@ namespace GZipCompressor
         }
 
         /// <summary>
-        /// Метод возвращает первое вхождение указанного массива байтов
+        /// РњРµС‚РѕРґ РІРѕР·РІСЂР°С‰Р°РµС‚ РїРµСЂРІРѕРµ РІС…РѕР¶РґРµРЅРёРµ СѓРєР°Р·Р°РЅРЅРѕРіРѕ РјР°СЃСЃРёРІР° Р±Р°Р№С‚РѕРІ
         /// </summary>
-        /// <param name="inputStream">Поток байтов</param>
-        /// <param name="blockHeader">Массив байтов</param>
-        /// <param name="readBlockSize">Размер блока для чтения потока байтов</param>
-        /// <returns>Первое вхождение указанного массива байтов</returns>
+        /// <param name="inputStream">РџРѕС‚РѕРє Р±Р°Р№С‚РѕРІ</param>
+        /// <param name="blockHeader">РњР°СЃСЃРёРІ Р±Р°Р№С‚РѕРІ</param>
+        /// <param name="readBlockSize">Р Р°Р·РјРµСЂ Р±Р»РѕРєР° РґР»СЏ С‡С‚РµРЅРёСЏ РїРѕС‚РѕРєР° Р±Р°Р№С‚РѕРІ</param>
+        /// <returns>РџРµСЂРІРѕРµ РІС…РѕР¶РґРµРЅРёРµ СѓРєР°Р·Р°РЅРЅРѕРіРѕ РјР°СЃСЃРёРІР° Р±Р°Р№С‚РѕРІ</returns>
         public static long GetBufferIndex(this Stream inputStream, byte[] blockHeader, int readBlockSize = DEFAULT_READ_BLOCK_SIZE)
         {
             while (inputStream.Position < inputStream.Length)

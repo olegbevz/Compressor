@@ -1,31 +1,31 @@
-using System;
+п»їusing System;
 
 namespace GZipCompressor
 {
     /// <summary>
-    /// Интерфейс для модуля упаковки/распаковки файла
+    /// РРЅС‚РµСЂС„РµР№СЃ РґР»СЏ РјРѕРґСѓР»СЏ СѓРїР°РєРѕРІРєРё/СЂР°СЃРїР°РєРѕРІРєРё С„Р°Р№Р»Р°
     /// </summary>
     public interface ICompressionUnit
     {
         /// <summary>
-        /// Событие изменения процента выполнения операции
+        /// РЎРѕР±С‹С‚РёРµ РёР·РјРµРЅРµРЅРёСЏ РїСЂРѕС†РµРЅС‚Р° РІС‹РїРѕР»РЅРµРЅРёСЏ РѕРїРµСЂР°С†РёРё
         /// </summary>
         event EventHandler<ProgressChangedEventArgs> ProgressChanged;
 
         /// <summary>
-        /// Событие завершения операции
+        /// РЎРѕР±С‹С‚РёРµ Р·Р°РІРµСЂС€РµРЅРёСЏ РѕРїРµСЂР°С†РёРё
         /// </summary>
         event EventHandler<CompletedEventArgs> Completed;
 
         /// <summary>
-        /// Запуск операции в асинхронном режиме
+        /// Р—Р°РїСѓСЃРє РѕРїРµСЂР°С†РёРё РІ Р°СЃРёРЅС…СЂРѕРЅРЅРѕРј СЂРµР¶РёРјРµ
         /// </summary>
-        /// <param name="inputPath">Имя входного файла</param>
-        /// <param name="outputPath">Имя выходного файла</param>
+        /// <param name="inputPath">РРјСЏ РІС…РѕРґРЅРѕРіРѕ С„Р°Р№Р»Р°</param>
+        /// <param name="outputPath">РРјСЏ РІС‹С…РѕРґРЅРѕРіРѕ С„Р°Р№Р»Р°</param>
         void Execute(string inputPath, string outputPath);
 
         /// <summary>
-        /// Отмена операции
+        /// РћС‚РјРµРЅР° РѕРїРµСЂР°С†РёРё
         /// </summary>
         void Cancel();
     }
