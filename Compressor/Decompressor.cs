@@ -22,12 +22,14 @@ namespace Compressor
                 {
                     inputStreamLength = inputStream.Length;
                     readenBytesCount = 0;
+
                     int blockOrder = 0;
 
                     // Если файл не начинается со стандартного заголовка, значит архив был создан с помощью сторонней программы.
                     // В этом случае разбить файл на отдельные части не удастся, выполняем распаковку архива в одном потоке.
                     if (!inputStream.StartsWith(gzipHeader))
                     {
+                        readenBytesCount = inputStreamLength;
                         DecompressBlock(0, 0);
                     }
                     else
@@ -38,6 +40,9 @@ namespace Compressor
                                 break;
 
                             var nextBlockIndex = inputStream.GetNextBlockIndex(gzipHeader);
+
+                            readenBytesCount = nextBlockIndex;
+                            ReportProgress();
 
                             var localBlockOrder = blockOrder;
                             threadScheduler.Enqueue(() => DecompressBlock(nextBlockIndex, localBlockOrder));
@@ -65,21 +70,24 @@ namespace Compressor
                 {
                     int bytesRead;
                     int bufferNumber = 0;
-                    do
+                    byte[] buffer = new byte[DECOMPRESS_BUFFER_SIZE];
+                    while ((bytesRead = compressStream.Read(buffer, 0, buffer.Length)) > 0)
                     {
-                        byte[] buffer = new byte[DECOMPRESS_BUFFER_SIZE];
-                        bytesRead = compressStream.Read(buffer, 0, buffer.Length);
-                        if (bytesRead == 0)
-                            break;
-
                         if (bytesRead < DECOMPRESS_BUFFER_SIZE)
                         {
                             Array.Resize(ref buffer, bytesRead);
                         }
 
                         bufferQueue.Enqueue(blockOrder, bufferNumber, buffer);
+
+                        buffer = new byte[DECOMPRESS_BUFFER_SIZE];
+
+                        Interlocked.Increment(ref totalBuffersCount);
+                        Interlocked.Increment(ref compressedBuffersCount);
+                        ReportProgress();
+
                         bufferNumber++;
-                    } while (bytesRead > 0);
+                    }
 
                     bufferQueue.SetLastSubOrder(blockOrder, --bufferNumber);
                 }

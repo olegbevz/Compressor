@@ -17,14 +17,14 @@ namespace Compressor.Tests
         public void EnqueueTest()
         {
             var orderedQueue = new OrderedQueue<int>();
-            Assert.AreEqual(0, orderedQueue.Count);
+            Assert.AreEqual(0, orderedQueue.Size);
 
             orderedQueue.Enqueue(0, 1);
-            Assert.AreEqual(1, orderedQueue.Count);
+            Assert.AreEqual(1, orderedQueue.Size);
             orderedQueue.Enqueue(2, 3);
-            Assert.AreEqual(2, orderedQueue.Count);
+            Assert.AreEqual(2, orderedQueue.Size);
             orderedQueue.Enqueue(1, 2);
-            Assert.AreEqual(3, orderedQueue.Count);
+            Assert.AreEqual(3, orderedQueue.Size);
         }
 
         [TestCase()]
@@ -38,15 +38,15 @@ namespace Compressor.Tests
             int item;
             Assert.IsTrue(orderedQueue.TryDequeue(out item));
             Assert.AreEqual(1, item);
-            Assert.AreEqual(2, orderedQueue.Count);
+            Assert.AreEqual(2, orderedQueue.Size);
 
             Assert.IsTrue(orderedQueue.TryDequeue(out item));
             Assert.AreEqual(2, item);
-            Assert.AreEqual(1, orderedQueue.Count);
+            Assert.AreEqual(1, orderedQueue.Size);
 
             Assert.IsTrue(orderedQueue.TryDequeue(out item));
             Assert.AreEqual(3, item);
-            Assert.AreEqual(0, orderedQueue.Count);
+            Assert.AreEqual(0, orderedQueue.Size);
 
             Assert.IsFalse(orderedQueue.TryDequeue(out item));
         }
@@ -64,7 +64,7 @@ namespace Compressor.Tests
             Assert.IsTrue(orderedQueue.TryDequeue(out item));
             Assert.AreEqual(1, item);
             Assert.IsFalse(orderedQueue.TryDequeue(out item));
-            Assert.AreEqual(1, orderedQueue.Count);
+            Assert.AreEqual(1, orderedQueue.Size);
 
             orderedQueue.Enqueue(3, 4);
             Assert.IsFalse(orderedQueue.TryDequeue(out item));
@@ -73,21 +73,21 @@ namespace Compressor.Tests
             Assert.IsTrue(orderedQueue.TryDequeue(out item));
             Assert.AreEqual(2, item);
             Assert.IsFalse(orderedQueue.TryDequeue(out item));
-            Assert.AreEqual(2, orderedQueue.Count);
+            Assert.AreEqual(2, orderedQueue.Size);
 
             orderedQueue.Enqueue(2, 3);
 
             Assert.IsTrue(orderedQueue.TryDequeue(out item));
             Assert.AreEqual(3, item);
-            Assert.AreEqual(2, orderedQueue.Count);
+            Assert.AreEqual(2, orderedQueue.Size);
 
             Assert.IsTrue(orderedQueue.TryDequeue(out item));
             Assert.AreEqual(4, item);
-            Assert.AreEqual(1, orderedQueue.Count);
+            Assert.AreEqual(1, orderedQueue.Size);
 
             Assert.IsTrue(orderedQueue.TryDequeue(out item));
             Assert.AreEqual(5, item);
-            Assert.AreEqual(0, orderedQueue.Count);
+            Assert.AreEqual(0, orderedQueue.Size);
         }
 
         [TestCase]
@@ -103,15 +103,17 @@ namespace Compressor.Tests
             Assert.IsTrue(orderedQueue.TryDequeue(out item));
             Assert.AreEqual(1, item);
             Assert.IsFalse(orderedQueue.TryDequeue(out item));
-            Assert.AreEqual(1, orderedQueue.Count);
+            Assert.AreEqual(1, orderedQueue.Size);
 
-            orderedQueue.Enqueue(1, 2, 5, true);
+            orderedQueue.Enqueue(1, 2, 5);
+            orderedQueue.SetLastSubOrder(1, 2);
             Assert.IsFalse(orderedQueue.TryDequeue(out item));
 
             orderedQueue.Enqueue(1, 0, 3);
             Assert.IsFalse(orderedQueue.TryDequeue(out item));
 
-            orderedQueue.Enqueue(0, 1, 2, true);
+            orderedQueue.Enqueue(0, 1, 2);
+            orderedQueue.SetLastSubOrder(0, 1);
             Assert.IsTrue(orderedQueue.TryDequeue(out item));
             Assert.AreEqual(2, item);
 

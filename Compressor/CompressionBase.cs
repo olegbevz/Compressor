@@ -65,13 +65,13 @@ namespace Compressor
                 using (var outputStream = File.OpenWrite(outputPath))
                 {
                     while (readInputStreamThread.IsAlive || 
-                        bufferQueue.Count > 0 || 
+                        bufferQueue.Size > 0 || 
                         threadScheduler.CurrentThreadsCount > 0)
                     {
                         if (cancellationPending)
                             break;
 
-                        if (bufferQueue.Count > 0)
+                        if (bufferQueue.Size > 0)
                         {
                             byte[] buffer;
                             if (bufferQueue.TryDequeue(out buffer))
@@ -135,13 +135,37 @@ namespace Compressor
             var progressChangedHandler = ProgressChanged;
             if (progressChangedHandler != null)
             {
-                var readInputStreamPercentage = (double)readenBytesCount / inputStreamLength;
-                var compressionPercentage = (double)compressedBuffersCount / totalBuffersCount;
-                var writeOutputStreamPercentage = (double) writtenBuffersCount/totalBuffersCount;
-                var processPercentage = (readInputStreamPercentage + compressionPercentage + writeOutputStreamPercentage) / 3;
-
+                var processPercentage = CalculateProgress();
                 progressChangedHandler.Invoke(this, new ProgressChangedEventArgs(processPercentage));
             }
+        }
+
+        /// <summary>
+        /// Расчет текущего процента выполнения операции.
+        /// </summary>
+        /// <returns>Процент выполнения в виде вещественного числа от 0.0 до 1.0</returns>
+        private double CalculateProgress()
+        {
+            // Сохраняем локальные значения переменных, 
+            // на случай если значения будут изменены во время расчета
+            long localReadenBytesCount = readenBytesCount,
+                localInputStreamLength = inputStreamLength;
+
+            int localTotalBuffersCount = totalBuffersCount,
+                localCompressedBuffersCount = compressedBuffersCount,
+                localWrittenBuffersCount = writtenBuffersCount;
+
+            // Рассчитываем процент считанных данных из исходного файла
+            var readInputStreamPercentage = (double)localReadenBytesCount / localInputStreamLength;
+
+            // Рассчитываем процент преобразованных данных
+            var compressionPercentage = (double)localCompressedBuffersCount / localTotalBuffersCount;
+
+            // Рассчитываем процент записанных данных в выходной файл 
+            var writeOutputStreamPercentage = (double)localWrittenBuffersCount / localTotalBuffersCount;
+
+            // Получаем общий процент выполнения операции как среднее арифметическое
+            return (readInputStreamPercentage + compressionPercentage + writeOutputStreamPercentage) / 3;
         }
     }
 }

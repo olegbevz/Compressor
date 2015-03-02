@@ -27,21 +27,23 @@ namespace Compressor
                 var inputFileInfo = new FileInfo(inputPath);
                 inputStreamLength = inputFileInfo.Length;
                 readenBytesCount = 0;
-                totalBuffersCount = (int)Math.Ceiling((double)inputFileInfo.Length / DEFAULT_BLOCK_SIZE);
-                var blockIndexes = Enumerable.Range(0, totalBuffersCount).Select(x => x * DEFAULT_BLOCK_SIZE).ToArray();
+                totalBuffersCount = (int)Math.Ceiling((double)inputFileInfo.Length / BlockSize);
 
-                for (int i = 0; i < blockIndexes.Length; i++)
+                for (int i = 0; i < totalBuffersCount; i++)
                 {
                     if (cancellationPending)
                         break;
 
-                    var blockIndex = i;
+                    int blockIndex = i;
+                    long currentPosition = i * BlockSize;
+                    long blockLength = Math.Min(BlockSize, inputStreamLength - currentPosition);
 
-                    long blockLength = i < blockIndexes.Length - 1
-                        ? blockIndexes[i + 1] - blockIndexes[i]
-                        : inputStreamLength - blockIndexes[i];
+                    while (bufferQueue.Size > ThreadsCount)
+                    {
+                        Thread.Sleep(100);
+                    }
 
-                    threadScheduler.Enqueue(() => { CompressBlock(blockIndexes[blockIndex], (int)blockLength, blockIndex); });
+                    threadScheduler.Enqueue(() => { CompressBlock(currentPosition, (int)blockLength, blockIndex); });
                 }
             }
             catch (Exception ex)
@@ -78,14 +80,14 @@ namespace Compressor
                     compressedBuffer = memoryStream.GetBufferWithoutZeroTail();
                 }
 
-                Interlocked.Increment(ref compressedBuffersCount);
-                ReportProgress();
-
-                bufferQueue.Enqueue(blockOrder, compressedBuffer);
-
                 // Размер буфера превышает ограничение сборщика мусора 8 Кб, 
                 // необходимо вручную очистить данные буфера из Large Object Heap 
                 GC.Collect();
+
+                bufferQueue.Enqueue(blockOrder, compressedBuffer);
+
+                Interlocked.Increment(ref compressedBuffersCount);
+                ReportProgress();
             }
             catch (Exception ex)
             {

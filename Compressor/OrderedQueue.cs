@@ -27,22 +27,32 @@ namespace Compressor
 
         private readonly object innerLock = new object();
 
-        public int Count
+        public int Size
         {
             get { return queueDictionary.Count; }
         }
 
         public void SetLastSubOrder(int order, int subOrder)
         {
+            if (subOrderLimits.ContainsKey(order))
+                throw new Exception("Order already has last sub order");
+
             subOrderLimits[order] = subOrder;
+
+            if (currentOrder == order && subOrder < currentSubOrder)
+            {
+                Interlocked.Increment(ref currentOrder);
+                currentSubOrder = 0;
+            }
         }
 
         public void Enqueue(int order, T item)
         {
-            Enqueue(order, 0, item, true);
+            SetLastSubOrder(order, 0);
+            Enqueue(order, 0, item);
         }
 
-        public void Enqueue(int order, int subOrder, T item, bool lastSubOrder = false)
+        public void Enqueue(int order, int subOrder, T item)
         {
             var queueOrder = new QueueOrder(order, subOrder);
 
@@ -55,18 +65,12 @@ namespace Compressor
             if (order == currentOrder && subOrder < currentSubOrder)
                 throw new Exception("Item with the same order already have been in queue and was dequeued.");
 
-            if (lastSubOrder && subOrderLimits.ContainsKey(order))
-                throw new Exception("Order already has last sub order");
-
             lock (innerLock)
             {
                 queueDictionary.Add(queueOrder, item);
             }
 
-            if (lastSubOrder)
-                subOrderLimits.Add(order, subOrder);
-
-            Debug.WriteLine(string.Format("OrderedQueue: an item with order {0} {1} was enqueued.", queueOrder.Order, queueOrder.SubOrder));
+            Debug.WriteLine(string.Format("OrderedQueue: an item with order {0} {1} was enqueued. Current queue size {2}.", queueOrder.Order, queueOrder.SubOrder, Size));
         }
 
         public bool TryDequeue(out T item)
@@ -77,7 +81,7 @@ namespace Compressor
             {
                 if (queueDictionary.TryGetValue(queueOrder, out item))
                 {
-                    Debug.WriteLine(string.Format("OrderedQueue: an item with order {0} {1} was dequeued.", currentOrder, currentSubOrder));
+                    Debug.WriteLine(string.Format("OrderedQueue: an item with order {0} {1} was dequeued. Current queue size {2}.", queueOrder.Order, queueOrder.SubOrder, Size));
 
                     queueDictionary.Remove(queueOrder);
 

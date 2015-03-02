@@ -22,10 +22,12 @@ namespace Compressor
 
         private CompletedEventArgs(
             CompletionStatus status,
-            List<Exception> exceptions)
+            IEnumerable<Exception> exceptions)
         {
             Status = status;
-            Exceptions = exceptions;
+
+            if (exceptions != null)
+                Exceptions = new List<Exception>(exceptions);
         }
 
         public CompletionStatus Status { get; private set; }
