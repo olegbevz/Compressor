@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -14,6 +15,8 @@ namespace GZipCompressor
         /// Содержимое заголовка соответсвует RFC для формата GZip (https://www.ietf.org/rfc/rfc1952.txt).
         /// </summary>
         private readonly byte[] gzipHeader = new byte[] { 31, 139, 8, 0, 0, 0, 0, 0, 4, 0 };
+
+        private const int READ_INPUT_STREAM_BUFFER_SIZE = 1024 * 1024;
 
         private const int DECOMPRESS_BUFFER_SIZE = 10 * 1024 * 1024;
 
@@ -44,9 +47,12 @@ namespace GZipCompressor
                             if (cancellationPending)
                                 break;
 
-                            var nextBlockIndex = inputStream.GetBufferIndex(gzipHeader, 1 * 1024 * 1024);
+                            var nextBlockIndex = inputStream.GetBufferIndex(gzipHeader, READ_INPUT_STREAM_BUFFER_SIZE);
                             if (nextBlockIndex == -1)
+                            {
+                                readenBytesCount = inputStreamLength;
                                 break;
+                            }
 
                             readenBytesCount = nextBlockIndex;
                             ReportProgress();
@@ -80,18 +86,21 @@ namespace GZipCompressor
                     byte[] buffer = new byte[DECOMPRESS_BUFFER_SIZE];
                     while ((bytesRead = compressStream.Read(buffer, 0, buffer.Length)) > 0)
                     {
+                        if (cancellationPending)
+                            break;
+
                         if (bytesRead < DECOMPRESS_BUFFER_SIZE)
                         {
                             Array.Resize(ref buffer, bytesRead);
                         }
 
-                        bufferQueue.Enqueue(blockOrder, bufferNumber, buffer);
-
-                        buffer = new byte[DECOMPRESS_BUFFER_SIZE];
-
                         Interlocked.Increment(ref totalBuffersCount);
                         Interlocked.Increment(ref compressedBuffersCount);
                         ReportProgress();
+
+                        bufferQueue.Enqueue(blockOrder, bufferNumber, buffer);
+
+                        buffer = new byte[DECOMPRESS_BUFFER_SIZE];
 
                         bufferNumber++;
                     }

@@ -156,16 +156,16 @@ namespace GZipCompressor
                 localWrittenBuffersCount = writtenBuffersCount;
 
             // Рассчитываем процент считанных данных из исходного файла
-            var readInputStreamPercentage = (double)localReadenBytesCount / localInputStreamLength;
+            var readInputStreamPercentage = localInputStreamLength == 0 ? 0 : (double)localReadenBytesCount / localInputStreamLength;
 
             // Рассчитываем процент преобразованных данных
-            var compressionPercentage = (double)localCompressedBuffersCount / localTotalBuffersCount;
+            var compressionPercentage = localTotalBuffersCount == 0 ? 0 : (double)localCompressedBuffersCount / localTotalBuffersCount;
 
             // Рассчитываем процент записанных данных в выходной файл 
-            var writeOutputStreamPercentage = (double)localWrittenBuffersCount / localTotalBuffersCount;
+            var writeOutputStreamPercentage = localTotalBuffersCount == 0 ? 0 : (double)localWrittenBuffersCount / localTotalBuffersCount;
 
-            // Получаем общий процент выполнения операции как среднее арифметическое
-            return (readInputStreamPercentage + compressionPercentage + writeOutputStreamPercentage) / 3;
+            // Получаем общий процент выполнения операции
+            return readInputStreamPercentage * compressionPercentage * writeOutputStreamPercentage;
         }
     }
 }
