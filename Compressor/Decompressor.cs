@@ -8,6 +8,11 @@ namespace Compressor
 {
     public class Decompressor : CompressionBase
     {
+        /// <summary>
+        /// «аголовок из массива байтов, который записываетс€ с помощью GZipStream
+        /// в начало каждого сжатого блока данных.
+        /// —одержимое заголовка соответсвует RFC дл€ формата GZip (https://www.ietf.org/rfc/rfc1952.txt).
+        /// </summary>
         private readonly byte[] gzipHeader = new byte[] { 31, 139, 8, 0, 0, 0, 0, 0, 4, 0 };
 
         private const int DECOMPRESS_BUFFER_SIZE = 10 * 1024 * 1024;
@@ -39,7 +44,7 @@ namespace Compressor
                             if (cancellationPending)
                                 break;
 
-                            var nextBlockIndex = inputStream.GetNextBlockIndex(gzipHeader);
+                            var nextBlockIndex = inputStream.GetBufferIndex(gzipHeader);
 
                             readenBytesCount = nextBlockIndex;
                             ReportProgress();

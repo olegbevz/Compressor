@@ -6,30 +6,86 @@ namespace Compressor.Tests
     [TestFixture]
     public class StreamExtensionsTests
     {
+        private readonly byte[] inputBuffer = new byte[] { 31, 139, 8, 1, 2, 3, 31, 139, 8, 4, 5, 6, 31, 139, 8, 7 };
+
         [TestCase]
-        public void GetNextBufferTests()
+        public void StreamStartsWithTest()
         {
-            var inputBuffer = new byte[] { 31, 139, 8, 1, 2, 3, 31, 139, 8, 4, 5, 6, 31, 139, 8, 7 };
+            using (var memoryStream = new MemoryStream(inputBuffer))
+            {
+                Assert.IsTrue(memoryStream.StartsWith(new byte[] { 31, 139, 8 }));
+                Assert.AreEqual(0, memoryStream.Position);
+            }
+        }
+
+        [TestCase]
+        public void StreamNotStartsWithTest()
+        {
+            using (var memoryStream = new MemoryStream(inputBuffer))
+            {
+                Assert.IsFalse(memoryStream.StartsWith(new byte[] { 31, 139, 9 }));
+                Assert.AreEqual(0, memoryStream.Position);
+            }
+        }
+
+        [TestCase]
+        public void EmptyStreamStartsWithTest()
+        {
+            using (var memoryStream = new MemoryStream())
+            {
+                Assert.IsFalse(memoryStream.StartsWith(new byte[] { 31, 139, 8 }));
+                Assert.AreEqual(0, memoryStream.Position);
+            }
+        }
+
+        [TestCase]
+        public void GetBufferWithoutZeroTailTest()
+        {
+            using (var memoryStream = new MemoryStream())
+            {
+                memoryStream.Write(inputBuffer, 0, inputBuffer.Length);
+                var bufferFromStream = memoryStream.GetBufferWithoutZeroTail();
+
+                CollectionAssert.AreEqual(inputBuffer, bufferFromStream);
+            }
+        }
+
+        [TestCase]
+        public void GetBufferWithoutZeroTailFromEmptyStreamTest()
+        {
+            using (var memoryStream = new MemoryStream())
+            {
+                var bufferFromStream = memoryStream.GetBufferWithoutZeroTail();
+
+                Assert.AreEqual(0, bufferFromStream.Length);
+            }
+        }
+
+        [TestCase]
+        public void GetBufferIndexTest()
+        {
             var blockHeader = new byte[] { 31, 139, 8 };
 
             using (var memoryStream = new MemoryStream(inputBuffer))
             {
-                var i1 = memoryStream.GetNextBlockIndex(blockHeader);
-                var i2 = memoryStream.GetNextBlockIndex(blockHeader);
-                var i3 = memoryStream.GetNextBlockIndex(blockHeader);
-                var i4 = memoryStream.GetNextBlockIndex(blockHeader);
-
-                //CollectionAssert.AreEqual(new long[] { 0, 6, 12 }, memoryStream.GetBlockIndexes(blockHeader));
+                Assert.AreEqual(0, memoryStream.GetBufferIndex(blockHeader));
+                Assert.AreEqual(6, memoryStream.GetBufferIndex(blockHeader));
+                Assert.AreEqual(12, memoryStream.GetBufferIndex(blockHeader));
+                Assert.AreEqual(-1, memoryStream.GetBufferIndex(blockHeader));
             }
+        }
+
+        [TestCase]
+        public void GetBufferIndexWithSmallReadBlockSizeTest()
+        {
+            var blockHeader = new byte[] { 31, 139, 8 };
 
             using (var memoryStream = new MemoryStream(inputBuffer))
             {
-                var i1 = memoryStream.GetNextBlockIndex(blockHeader);
-                var i2 = memoryStream.GetNextBlockIndex(blockHeader);
-                var i3 = memoryStream.GetNextBlockIndex(blockHeader);
-                var i4 = memoryStream.GetNextBlockIndex(blockHeader);
-
-                //CollectionAssert.AreEqual(new long[] { 0, 6, 12 }, memoryStream.GetBlockIndexes(blockHeader, 5));
+                Assert.AreEqual(0, memoryStream.GetBufferIndex(blockHeader, 5));
+                Assert.AreEqual(6, memoryStream.GetBufferIndex(blockHeader, 5));
+                Assert.AreEqual(12, memoryStream.GetBufferIndex(blockHeader, 5));
+                Assert.AreEqual(-1, memoryStream.GetBufferIndex(blockHeader, 5));
             }
         }
     }

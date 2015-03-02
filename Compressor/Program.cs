@@ -14,12 +14,14 @@ namespace Compressor
         private static ICompressionUnit compressionUnit;
         private static int cursorPositionLeftForProgress;
         private static int cursorPositionTopForProgress;
+        private static int programResult = 0;
 
         private static int Main(string[] args)
         {
             try
             {
-                Console.WriteLine("Compression utility.");
+                Console.CursorVisible = false;
+                Console.WriteLine("GZip Compression Utility.");
                 if (args.Length != 3)
                 {
                     ShowHelp();
@@ -59,7 +61,7 @@ namespace Compressor
                 // Блокируем основной поток приложения до завершения операции.
                 autoResetEvent.WaitOne();
                 
-                return 0;
+                return programResult;
             }
             catch (Exception ex)
             {
@@ -95,9 +97,11 @@ namespace Compressor
                 case CompletionStatus.Successed:
                     Console.WriteLine("Operation completed successfully.");
                     Console.WriteLine(string.Format(@"Time spent: {0}.", elapsedTime));
+                    programResult = 0;
                     break;
                 case CompletionStatus.Cancelled:
                     Console.WriteLine("Operation has been canceled.");
+                    programResult = 1;
                     break;
                 case CompletionStatus.Faulted:
                     Console.WriteLine("Operation failed.");
@@ -105,6 +109,7 @@ namespace Compressor
                     {
                         Console.WriteLine(exception.Message);
                     }
+                    programResult = 1;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();

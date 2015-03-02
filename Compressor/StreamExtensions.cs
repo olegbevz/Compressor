@@ -1,25 +1,25 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace Compressor
 {
+    /// <summary>
+    /// Набор вспомогательных методов для работы с потоками
+    /// </summary>
     public static class StreamExtensions
     {
-        public static long CopyTo(this Stream sourceStream, Stream targetStream, int copyBufferSize = 1024)
-        {
-            byte[] buffer = new byte[1024];
-            int bytesRead = 0;
-            long totalBytes = 0;
-            while ((bytesRead = sourceStream.Read(buffer, 0, buffer.Length)) > 0)
-            {
-                targetStream.Write(buffer, 0, bytesRead);
-                totalBytes += bytesRead;
-            }
-            return totalBytes;
-        }
+        /// <summary>
+        /// Размер блока для чтения потока байтов
+        /// </summary>
+        private const int DEFAULT_READ_BLOCK_SIZE = 1024;
 
+        /// <summary>
+        /// Получить массив байтов из потока в памяти.
+        /// В отличие от метода MemoryStream::GetBuffer метод при больших объемах данных 
+        /// возвращает массив байтов без нулевых байтов в конце.
+        /// </summary>
+        /// <param name="memoryStream">Поток в памяти</param>
+        /// <returns></returns>
         public static byte[] GetBufferWithoutZeroTail(this MemoryStream memoryStream)
         {
             memoryStream.Position = 0;
@@ -29,6 +29,12 @@ namespace Compressor
             return buffer;
         }
 
+        /// <summary>
+        /// Поток начинается с указанного массива байтов.
+        /// </summary>
+        /// <param name="inputStream">Поток байтов</param>
+        /// <param name="buffer">Массив байтов</param>
+        /// <returns>Поток байтов начи нается указанного массива байтов</returns>
         public static bool StartsWith(this Stream inputStream, byte[] buffer)
         {
             byte[] streamBuffer = new byte[buffer.Length];
@@ -38,32 +44,38 @@ namespace Compressor
             if (inputStream.Read(streamBuffer, 0, streamBuffer.Length) > 0)
             {
                 inputStream.Seek(0, SeekOrigin.Begin);
-
                 return CompareArrays(streamBuffer, 0, buffer);
             }
 
             return false;
         }
 
-        public static long GetNextBlockIndex(this Stream inputStream, byte[] blockHeader, int readBlockBufferSize = 1024)
+        /// <summary>
+        /// Метод возвращает первое вхождение указанного массива байтов
+        /// </summary>
+        /// <param name="inputStream">Поток байтов</param>
+        /// <param name="blockHeader">Массив байтов</param>
+        /// <param name="readBlockSize">Размер блока для чтения потока байтов</param>
+        /// <returns>Первое вхождение указанного массива байтов</returns>
+        public static long GetBufferIndex(this Stream inputStream, byte[] blockHeader, int readBlockSize = DEFAULT_READ_BLOCK_SIZE)
         {
             while (inputStream.Position < inputStream.Length)
             {
                 long startPosition = inputStream.Position;
 
-                byte[] buffer = new byte[readBlockBufferSize];
+                byte[] buffer = new byte[readBlockSize];
                 if (inputStream.Read(buffer, 0, buffer.Length) == 0)
                     break;
 
                 var arrayIndexes = GetSubArrayIndexes(buffer, blockHeader);
                 if (arrayIndexes.Length > 0)
                 {
-                    inputStream.Position = arrayIndexes.Length == 1 ? startPosition + readBlockBufferSize : startPosition + arrayIndexes[1];
+                    inputStream.Position = arrayIndexes.Length == 1 ? startPosition + readBlockSize : startPosition + arrayIndexes[1];
                     return startPosition + arrayIndexes[0];
                 }
 
                 if (inputStream.Position == inputStream.Length)
-                    return inputStream.Length;
+                    break;
 
                 inputStream.Position -= blockHeader.Length;
             }
@@ -71,33 +83,7 @@ namespace Compressor
             return -1;
         }
 
-        public static long[] GetBlockIndexes(this Stream inputStream, byte[] blockHeader, int readBlockBufferSize = 1024)
-        {
-            var blockIndexes = new List<long>();
-
-            while (true)
-            {
-                long startPosition = inputStream.Position;
-
-                byte[] buffer = new byte[readBlockBufferSize];
-                if (inputStream.Read(buffer, 0, buffer.Length) == 0)
-                    break;
-                
-                var arrayIndexes = GetSubArrayIndexes(buffer, blockHeader);
-                blockIndexes.AddRange(arrayIndexes.Select(x => x + startPosition));
-
-                if (inputStream.Position >= inputStream.Length)
-                {
-                    break;
-                }
-
-                inputStream.Position -= blockHeader.Length;
-            }
-
-            return blockIndexes.Distinct().ToArray();
-        }
-
-        public static long[] GetSubArrayIndexes(byte[] array, byte[] subArray)
+        private static long[] GetSubArrayIndexes(byte[] array, byte[] subArray)
         {
             var indexes = new List<long>(); 
 
@@ -112,20 +98,7 @@ namespace Compressor
             return indexes.ToArray();
         }
 
-        public static int GetSubArrayIndex(byte[] array, byte[] subArray)
-        {
-            for (int i = 0; i < array.Length; i++)
-            {
-                if (CompareArrays(array, i, subArray))
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
-        public static bool CompareArrays(byte[] array, int startIndex, byte[] arrayToCompare)
+        private static bool CompareArrays(byte[] array, int startIndex, byte[] arrayToCompare)
         {
             if (startIndex < 0 || startIndex > array.Length - arrayToCompare.Length)
             {
