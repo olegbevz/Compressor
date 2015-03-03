@@ -79,14 +79,14 @@ namespace GZipCompressor
                     compressedBuffer = memoryStream.GetBufferWithoutZeroTail();
                 }
 
-                // Размер буфера превышает ограничение сборщика мусора 8 Кб, 
-                // необходимо вручную очистить данные буфера из Large Object Heap 
-                GC.Collect();
-
                 bufferQueue.Enqueue(blockOrder, compressedBuffer);
 
                 Interlocked.Increment(ref compressedBuffersCount);
                 ReportProgress();
+
+                // Размер буфера превышает ограничение сборщика мусора 85000 байтов, 
+                // необходимо вручную очистить данные буфера из Large Object Heap 
+                GC.Collect();
             }
             catch (Exception ex)
             {

@@ -63,6 +63,10 @@ namespace GZipCompressor
                             threadScheduler.Enqueue(() => DecompressBlock(nextBlockIndex, localBlockOrder));
 
                             blockOrder += 1;
+
+                            // Размер буфера превышает ограничение сборщика мусора 85000 байтов, 
+                            // необходимо вручную очистить данные буфера из Large Object Heap 
+                            GC.Collect();
                         }
                     }
                 }
@@ -105,6 +109,10 @@ namespace GZipCompressor
                         buffer = new byte[DECOMPRESS_BUFFER_SIZE];
 
                         bufferNumber++;
+
+                        // Размер буфера превышает ограничение сборщика мусора 85000 байтов, 
+                        // необходимо вручную очистить данные буфера из Large Object Heap 
+                        GC.Collect();
                     }
 
                     bufferQueue.SetLastSubOrder(blockOrder, --bufferNumber);

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime;
 using System.Threading;
 
 namespace GZipCompressor
@@ -82,16 +83,15 @@ namespace GZipCompressor
 
                                 Interlocked.Increment(ref writtenBuffersCount);
                                 Interlocked.Add(ref writtenBytesCount, buffer.Length);
-
-                                // Размер буфера превышает ограничение сборщика мусора 8 Кб, 
-                                // необходимо вручную очистить данные буфера из Large Object Heap 
-                                GC.Collect();
-
                                 ReportProgress();
                             }
                         }
 
                         Thread.Sleep(WRITE_OUTPUT_STREAM_INTERVAL);
+
+                        // Размер буфера превышает ограничение сборщика мусора 85000 байтов, 
+                        // необходимо вручную очистить данные буфера из Large Object Heap
+                        GC.Collect();
                     }
                 }
             }
