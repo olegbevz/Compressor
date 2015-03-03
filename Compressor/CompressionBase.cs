@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -9,18 +10,20 @@ namespace GZipCompressor
 {
     public abstract class CompressionBase : ICompressionUnit
     {
-        private const int DEFAULT_THREADS_COUNT = 5;
-        private const int WRITE_OUTPUT_STREAM_INTERVAL = 100;
-        
+        protected const int DEFAULT_THREADS_COUNT = 5;
+        protected const int DEFAULT_QUEUE_MAX_SIZE = 10;
+        private const int THREAD_SLEEP_INTERVAL = 100;
+
         private readonly Thread readInputStreamThread;
         private readonly Thread writeOutputStreamThread;
 
         protected string inputPath;
         protected string outputPath;
         protected volatile bool cancellationPending;
-        protected readonly OrderedQueue<byte[]> bufferQueue = new OrderedQueue<byte[]>();
-        protected readonly List<Exception> innerExceptions = new List<Exception>();
-        protected readonly ThreadScheduler threadScheduler = new ThreadScheduler(4);
+        protected readonly OrderedQueue<byte[]> bufferQueue;
+        protected readonly Semaphore bufferQueueSemaphore;
+        protected readonly List<Exception> innerExceptions;
+        protected readonly ThreadScheduler threadScheduler;
 
         protected long inputStreamLength;
         protected long readenBytesCount;
@@ -29,18 +32,30 @@ namespace GZipCompressor
         protected int writtenBuffersCount;
         protected long writtenBytesCount;
 
-        protected CompressionBase()
+        protected CompressionBase(
+            int threadsCount = DEFAULT_THREADS_COUNT, 
+            int maxQueueSize = DEFAULT_QUEUE_MAX_SIZE)
         {
+            ThreadsCount = threadsCount;
+            MaxQueueSize = maxQueueSize;
+
             readInputStreamThread = new Thread(ReadInputStream);
             writeOutputStreamThread = new Thread(WriteOutputStream);
 
-            ThreadsCount = DEFAULT_THREADS_COUNT;
+            threadScheduler = new ThreadScheduler(threadsCount);
+
+            bufferQueue = new OrderedQueue<byte[]>();
+            bufferQueueSemaphore = new Semaphore(maxQueueSize);
+
+            innerExceptions = new List<Exception>();
         }
 
         public event EventHandler<ProgressChangedEventArgs> ProgressChanged;
         public event EventHandler<CompletedEventArgs> Completed;
 
-        public int ThreadsCount { get; set; }
+        public int ThreadsCount { get; private set; }
+
+        public int MaxQueueSize { get; private set; }
 
         public void Execute(string inputPath, string outputPath)
         {
@@ -49,8 +64,6 @@ namespace GZipCompressor
 
             this.inputPath = inputPath;
             this.outputPath = outputPath;
-
-            threadScheduler.MaxThreads = ThreadsCount;
 
             readInputStreamThread.Start();
             writeOutputStreamThread.Start();
@@ -62,7 +75,7 @@ namespace GZipCompressor
         {
             try
             {
-                Debug.WriteLine("Write output stream thread was started " + Thread.CurrentThread.ManagedThreadId + " was started .");
+                Debug.WriteLine("Write output stream thread was started " + Thread.CurrentThread.ManagedThreadId + " was started.");
 
                 using (var outputStream = File.OpenWrite(outputPath))
                 {
@@ -78,20 +91,22 @@ namespace GZipCompressor
                             byte[] buffer;
                             if (bufferQueue.TryDequeue(out buffer))
                             {
+                                bufferQueueSemaphore.Release();
+
                                 outputStream.Write(buffer, 0, buffer.Length);
                                 outputStream.Flush();
 
                                 Interlocked.Increment(ref writtenBuffersCount);
                                 Interlocked.Add(ref writtenBytesCount, buffer.Length);
                                 ReportProgress();
+
+                                // Размер буфера превышает ограничение сборщика мусора 85000 байтов, 
+                                // необходимо вручную очистить данные буфера из Large Object Heap
+                                GC.Collect();
                             }
                         }
 
-                        Thread.Sleep(WRITE_OUTPUT_STREAM_INTERVAL);
-
-                        // Размер буфера превышает ограничение сборщика мусора 85000 байтов, 
-                        // необходимо вручную очистить данные буфера из Large Object Heap
-                        GC.Collect();
+                        Thread.Sleep(THREAD_SLEEP_INTERVAL);
                     }
                 }
             }

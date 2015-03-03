@@ -10,12 +10,15 @@ namespace GZipCompressor
     {
         private const long DEFAULT_BLOCK_SIZE = 10 * 1024 * 1024;
 
-        public Compressor()
+        public Compressor(
+            long blockSize = DEFAULT_BLOCK_SIZE, 
+            int threadsCount = DEFAULT_THREADS_COUNT,
+            int maxQueueSize = DEFAULT_QUEUE_MAX_SIZE) : base(threadsCount, maxQueueSize)
         {
-            BlockSize = DEFAULT_BLOCK_SIZE;
+            BlockSize = blockSize;
         }
 
-        public long BlockSize { get; set; }
+        public long BlockSize { get; private set; }
 
         protected override void ReadInputStream()
         {
@@ -37,11 +40,6 @@ namespace GZipCompressor
                     long currentPosition = i * BlockSize;
                     long blockLength = Math.Min(BlockSize, inputStreamLength - currentPosition);
 
-                    while (bufferQueue.Size > ThreadsCount)
-                    {
-                        Thread.Sleep(100);
-                    }
-
                     threadScheduler.Enqueue(() => { CompressBlock(currentPosition, (int)blockLength, blockIndex); });
                 }
             }
@@ -56,8 +54,8 @@ namespace GZipCompressor
         {
             try
             {
+                // Считываем массив байтов из исходного файла
                 byte[] readenBuffer = new byte[blockLength];
-
                 using (var inputStream = File.OpenRead(inputPath))
                 {
                     inputStream.Seek(streamStartIndex, SeekOrigin.Begin);
@@ -67,8 +65,8 @@ namespace GZipCompressor
                 Interlocked.Add(ref readenBytesCount, readenBuffer.Length);
                 ReportProgress();
 
+                // Сжимаем исходный массив байтов  
                 byte[] compressedBuffer;
-
                 using (var memoryStream = new MemoryStream())
                 {
                     using (var compressStream = new GZipStream(memoryStream, CompressionMode.Compress, true))
@@ -79,6 +77,8 @@ namespace GZipCompressor
                     compressedBuffer = memoryStream.GetBufferWithoutZeroTail();
                 }
 
+                // Заносим сжатый массив байтов в очередь на запись
+                bufferQueueSemaphore.Wait();
                 bufferQueue.Enqueue(blockOrder, compressedBuffer);
 
                 Interlocked.Increment(ref compressedBuffersCount);

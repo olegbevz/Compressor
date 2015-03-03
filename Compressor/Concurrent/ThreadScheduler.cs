@@ -10,22 +10,24 @@ namespace GZipCompressor
     /// </summary>
     public class ThreadScheduler
     {
-        private const int TIME_INTERVAL = 100;
-
         /// <summary>
         /// Счетчик запущенных потоков
         /// </summary>
-        private int currentThreadsCount = 0;
+        private int currentThreadsCount;
+
+        private readonly Semaphore threadSemaphore;
 
         public ThreadScheduler(int maxThreads)
         {
             MaxThreads = maxThreads;
+
+            threadSemaphore = new Semaphore(maxThreads);
         }
 
         /// <summary>
         /// Максимальное число потоков
         /// </summary>
-        public int MaxThreads { get; set; }
+        public int MaxThreads { get; private set; }
 
         public int CurrentThreadsCount
         {
@@ -35,29 +37,18 @@ namespace GZipCompressor
         /// <summary>
         /// Выполнить действие в отдельном потоке.
         /// Если было достигнуто максимальное количество потоков
-        /// планировщик ожидает завершения одного из запущенных потоков.
+        /// планировщик блокирует вызывающий поток и ожидает завершения одного из запущенных потоков.
         /// </summary>
         /// <param name="threadAction">Выполняемое действие</param>
         public void Enqueue(Action threadAction)
         {
-            WaitForAvailableThreads();
+            currentThreadsCount = threadSemaphore.Wait();
 
             // Запускаем действие в отдельном потоке
             var thread = new Thread(ExceuteThread);
             thread.Start(threadAction);
 
-            // Увеличиваем счетчик запущенных потоков
-            Interlocked.Increment(ref currentThreadsCount);
-
             Debug.WriteLine(string.Format("Thread started. Current threads count: {0}.", currentThreadsCount));
-        }
-
-        private void WaitForAvailableThreads()
-        {
-            while (currentThreadsCount >= MaxThreads)
-            {
-                Thread.Sleep(TIME_INTERVAL);
-            }
         }
 
         private void ExceuteThread(object state)
@@ -66,8 +57,7 @@ namespace GZipCompressor
             if (threadAction != null)
                 threadAction();
 
-            // Уменьшаем счетчик запущенных потоков
-            Interlocked.Decrement(ref currentThreadsCount);
+            currentThreadsCount = threadSemaphore.Release();
 
             Debug.WriteLine(string.Format("Thread disposed. Current threads count: {0}.", currentThreadsCount));
         }

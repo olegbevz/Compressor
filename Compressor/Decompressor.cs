@@ -22,6 +22,12 @@ namespace GZipCompressor
 
         private double lastProgress;
 
+        public Decompressor(
+            int threadsCount = DEFAULT_THREADS_COUNT,
+            int maxQueueSize = DEFAULT_QUEUE_MAX_SIZE) : base(threadsCount, maxQueueSize)
+        {
+        }
+
         protected override void ReadInputStream()
         {
             try
@@ -87,26 +93,33 @@ namespace GZipCompressor
 
                 using (var compressStream = new GZipStream(inputStream, CompressionMode.Decompress, true))
                 {
-                    int bytesRead;
                     int bufferNumber = 0;
+
                     byte[] buffer = new byte[DECOMPRESS_BUFFER_SIZE];
-                    while ((bytesRead = compressStream.Read(buffer, 0, buffer.Length)) > 0)
+                    int bytesRead = compressStream.Read(buffer, 0, buffer.Length);
+                    if (bytesRead < DECOMPRESS_BUFFER_SIZE)
+                        Array.Resize(ref buffer, bytesRead);
+
+                    byte[] nextBuffer = new byte[DECOMPRESS_BUFFER_SIZE];
+                    while (bytesRead > 0)
                     {
                         if (cancellationPending)
                             break;
 
+                        bytesRead = compressStream.Read(nextBuffer, 0, nextBuffer.Length);
+
                         if (bytesRead < DECOMPRESS_BUFFER_SIZE)
-                        {
-                            Array.Resize(ref buffer, bytesRead);
-                        }
+                            Array.Resize(ref nextBuffer, bytesRead);
+
+                        bufferQueueSemaphore.Wait();
+                        bufferQueue.Enqueue(blockOrder, bufferNumber, buffer, nextBuffer.Length == 0);
 
                         Interlocked.Increment(ref totalBuffersCount);
                         Interlocked.Increment(ref compressedBuffersCount);
                         ReportProgress();
 
-                        bufferQueue.Enqueue(blockOrder, bufferNumber, buffer);
-
-                        buffer = new byte[DECOMPRESS_BUFFER_SIZE];
+                        buffer = nextBuffer;
+                        nextBuffer = new byte[DECOMPRESS_BUFFER_SIZE];
 
                         bufferNumber++;
 
@@ -114,8 +127,6 @@ namespace GZipCompressor
                         // необходимо вручную очистить данные буфера из Large Object Heap 
                         GC.Collect();
                     }
-
-                    bufferQueue.SetLastSubOrder(blockOrder, --bufferNumber);
                 }
             }
         }

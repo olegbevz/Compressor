@@ -45,16 +45,18 @@
     <Compile Include="Decompressor.cs" />
     <Compile Include="EventArgs\CompletionStatus.cs" />
     <Compile Include="ICompressionUnit.cs" />
-    <Compile Include="OrderedQueue.cs" />
+    <Compile Include="Concurrent\OrderedQueue.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="EventArgs\ProgressChangedEventArgs.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Concurrent\Semaphore.cs" />
     <Compile Include="StreamExtensions.cs" />
-    <Compile Include="ThreadScheduler.cs" />
+    <Compile Include="Concurrent\ThreadScheduler.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

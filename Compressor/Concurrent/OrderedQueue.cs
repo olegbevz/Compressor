@@ -8,10 +8,10 @@ namespace GZipCompressor
     /// <summary>
     /// Упорядоченная очередь элементов.
     /// Для каждого элемента указываетс¤ пор¤дковый номер в очереди.
-    /// Очередь гарантирует, что элементы будут извлечены в пор¤дке, соответствующем номерам элементов, 
-    /// независимо от того, в каком пор¤дке элементы добавл¤лись в очередь. 
+    /// Очередь гарантирует, что элементы будут извлечены в соответствии с порядковыми номерами элементов, 
+    /// независимо от того, в каком пор¤дке элементы добавлялись в очередь. 
     /// </summary>
-    /// <typeparam name="T">“ип элементов очереди</typeparam>
+    /// <typeparam name="T">Тип элементов очереди</typeparam>
     public class OrderedQueue<T>
     {
         private readonly Dictionary<QueueOrder, T> queueDictionary 
@@ -31,27 +31,12 @@ namespace GZipCompressor
             get { return queueDictionary.Count; }
         }
 
-        public void SetLastSubOrder(int order, int subOrder)
-        {
-            if (subOrderLimits.ContainsKey(order))
-                throw new Exception("Order already has last sub order");
-
-            subOrderLimits[order] = subOrder;
-
-            if (currentOrder == order && subOrder < currentSubOrder)
-            {
-                Interlocked.Increment(ref currentOrder);
-                currentSubOrder = 0;
-            }
-        }
-
         public void Enqueue(int order, T item)
         {
-            SetLastSubOrder(order, 0);
-            Enqueue(order, 0, item);
+            Enqueue(order, 0, item, true);
         }
 
-        public void Enqueue(int order, int subOrder, T item)
+        public void Enqueue(int order, int subOrder, T item, bool lastSubOrder = false)
         {
             var queueOrder = new QueueOrder(order, subOrder);
 
@@ -64,8 +49,14 @@ namespace GZipCompressor
             if (order == currentOrder && subOrder < currentSubOrder)
                 throw new Exception("Item with the same order already have been in queue and was dequeued.");
 
+            if (lastSubOrder && order == currentOrder && subOrder < currentSubOrder)
+                throw new Exception("Item with sith this sub order is not the last.");
+
             lock (innerLock)
             {
+                if (lastSubOrder)
+                    subOrderLimits[order] = subOrder;
+
                 queueDictionary.Add(queueOrder, item);
             }
 
@@ -80,8 +71,6 @@ namespace GZipCompressor
             {
                 if (queueDictionary.TryGetValue(queueOrder, out item))
                 {
-                    Debug.WriteLine(string.Format("OrderedQueue: an item with order {0} {1} was dequeued. Current queue size {2}.", queueOrder.Order, queueOrder.SubOrder, Size));
-
                     queueDictionary.Remove(queueOrder);
 
                     if (subOrderLimits.ContainsKey(currentOrder) && currentSubOrder == subOrderLimits[currentOrder])
@@ -93,6 +82,8 @@ namespace GZipCompressor
                     {
                         Interlocked.Increment(ref currentSubOrder);
                     }
+
+                    Debug.WriteLine(string.Format("OrderedQueue: an item with order {0} {1} was dequeued. Current queue size {2}.", queueOrder.Order, queueOrder.SubOrder, Size));
 
                     return true;
                 }

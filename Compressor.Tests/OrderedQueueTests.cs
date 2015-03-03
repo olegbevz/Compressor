@@ -105,15 +105,13 @@ namespace GZipCompressor.Tests
             Assert.IsFalse(orderedQueue.TryDequeue(out item));
             Assert.AreEqual(1, orderedQueue.Size);
 
-            orderedQueue.Enqueue(1, 2, 5);
-            orderedQueue.SetLastSubOrder(1, 2);
+            orderedQueue.Enqueue(1, 2, 5, true);
             Assert.IsFalse(orderedQueue.TryDequeue(out item));
 
             orderedQueue.Enqueue(1, 0, 3);
             Assert.IsFalse(orderedQueue.TryDequeue(out item));
 
-            orderedQueue.Enqueue(0, 1, 2);
-            orderedQueue.SetLastSubOrder(0, 1);
+            orderedQueue.Enqueue(0, 1, 2, true);
             Assert.IsTrue(orderedQueue.TryDequeue(out item));
             Assert.AreEqual(2, item);
 
