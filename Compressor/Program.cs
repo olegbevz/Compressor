@@ -9,7 +9,6 @@ namespace GZipCompressor
     {
         private static readonly Stopwatch stopWatch = new Stopwatch();
         private static readonly AutoResetEvent autoResetEvent = new AutoResetEvent(false);
-        private static readonly object consoleLock = new object();
 
         private static ICompressionUnit compressionUnit;
         private static int cursorPositionLeftForProgress;
@@ -82,11 +81,8 @@ namespace GZipCompressor
 
         private static void OnProgressChanged(object sender, ProgressChangedEventArgs args)
         {
-            lock (consoleLock)
-            {
-                Console.SetCursorPosition(cursorPositionLeftForProgress, cursorPositionTopForProgress);
-                Console.WriteLine(string.Format("{0:F3} %", args.ProgressPercentage * 100));
-            }
+            Console.SetCursorPosition(cursorPositionLeftForProgress, cursorPositionTopForProgress);
+            Console.WriteLine(string.Format("{0:F3} %", args.ProgressPercentage * 100));
         }
 
         private static void OnCompressorCompleted(object sender, CompletedEventArgs args)

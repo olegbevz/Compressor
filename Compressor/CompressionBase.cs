@@ -14,16 +14,17 @@ namespace GZipCompressor
         protected const int DEFAULT_QUEUE_MAX_SIZE = 10;
         private const int THREAD_SLEEP_INTERVAL = 100;
 
-        private readonly Thread readInputStreamThread;
-        private readonly Thread writeOutputStreamThread;
-
         protected string inputPath;
         protected string outputPath;
         protected volatile bool cancellationPending;
+
+        private readonly Thread readInputStreamThread;
+        private readonly Thread writeOutputStreamThread;
         protected readonly OrderedQueue<byte[]> bufferQueue;
         protected readonly Semaphore bufferQueueSemaphore;
         protected readonly List<Exception> innerExceptions;
         protected readonly ThreadScheduler threadScheduler;
+        protected readonly object reportProgressLock = new object();
 
         protected long inputStreamLength;
         protected long readenBytesCount;
@@ -93,11 +94,11 @@ namespace GZipCompressor
                             {
                                 bufferQueueSemaphore.Release();
 
-                                // Записываем массив байтов, полученный из очереди в файл
+                                // Записываем массив байтов, полученный из очереди, в файл
                                 outputStream.Write(buffer, 0, buffer.Length);
                                 outputStream.Flush();
 
-                                // Сообщаем обизменении проуента выполнения операции
+                                // Сообщаем об изменении процента выполнения операции
                                 Interlocked.Increment(ref writtenBuffersCount);
                                 Interlocked.Add(ref writtenBytesCount, buffer.Length);
                                 ReportProgress();
@@ -159,13 +160,20 @@ namespace GZipCompressor
             }
         }
 
+        /// <summary>
+        /// Сообщить об изменении процента выполнения задачи
+        /// </summary>
         protected void ReportProgress()
         {
             var progressChangedHandler = ProgressChanged;
             if (progressChangedHandler != null)
             {
-                var processPercentage = CalculateProgress();
-                progressChangedHandler.Invoke(this, new ProgressChangedEventArgs(processPercentage));
+                // Заводим блокировку, чтобы гарантировать последовательный вызов событий
+                lock (reportProgressLock)
+                {
+                    var processPercentage = CalculateProgress();
+                    progressChangedHandler.Invoke(this, new ProgressChangedEventArgs(processPercentage));
+                }
             }
         }
 

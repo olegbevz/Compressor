@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -62,6 +61,7 @@ namespace GZipCompressor
                                 break;
                             }
 
+                            // Сообщаем об изменении процента выполнения операции
                             readenBytesCount = nextBlockIndex;
                             ReportProgress();
 
@@ -85,6 +85,11 @@ namespace GZipCompressor
             }
         }
 
+        /// <summary>
+        /// Метод выполняет распаковку (декомпрессию) отдельного блока данных из исходного файла
+        /// </summary>
+        /// <param name="streamStartPosition">Смещение блока данных от начала файла</param>
+        /// <param name="blockOrder">Порядок блока</param>
         private void DecompressBlock(long streamStartPosition, int blockOrder)
         {
             using (var inputStream = File.OpenRead(inputPath))
@@ -113,7 +118,8 @@ namespace GZipCompressor
 
                         bufferQueueSemaphore.Wait();
                         bufferQueue.Enqueue(blockOrder, bufferNumber, buffer, nextBuffer.Length == 0);
-
+                        
+                        // Сообщаем об изменении процента выполнения операции
                         Interlocked.Increment(ref totalBuffersCount);
                         Interlocked.Increment(ref compressedBuffersCount);
                         ReportProgress();

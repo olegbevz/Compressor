@@ -50,7 +50,13 @@ namespace GZipCompressor
             }
         }
 
-        protected void CompressBlock(long streamStartIndex, int blockLength, int blockOrder)
+        /// <summary>
+        /// Метод выполняет сжатие отдельного блока данных из исходного файла
+        /// </summary>
+        /// <param name="streamStartPosition">Смещение блока данных от начала файла</param>
+        /// <param name="blockLength">Длина блока</param>
+        /// <param name="blockOrder">Порядок блока</param>
+        protected void CompressBlock(long streamStartPosition, int blockLength, int blockOrder)
         {
             try
             {
@@ -58,10 +64,11 @@ namespace GZipCompressor
                 byte[] readenBuffer = new byte[blockLength];
                 using (var inputStream = File.OpenRead(inputPath))
                 {
-                    inputStream.Seek(streamStartIndex, SeekOrigin.Begin);
+                    inputStream.Seek(streamStartPosition, SeekOrigin.Begin);
                     inputStream.Read(readenBuffer, 0, blockLength);
                 }
 
+                // Сообщаем об изменении процента выполнения операции
                 Interlocked.Add(ref readenBytesCount, readenBuffer.Length);
                 ReportProgress();
 
@@ -81,6 +88,7 @@ namespace GZipCompressor
                 bufferQueueSemaphore.Wait();
                 bufferQueue.Enqueue(blockOrder, compressedBuffer);
 
+                // Сообщаем об изменении процента выполнения операции
                 Interlocked.Increment(ref compressedBuffersCount);
                 ReportProgress();
 
