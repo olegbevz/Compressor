@@ -94,5 +94,14 @@ namespace GZipCompressor
                 Cancel();
             }
         }
+
+        protected override double CalculateProgress(
+           double readInputStreamPercentage,
+           double compressionPercentage,
+           double writeOutputStreamPercentage)
+        {
+            // Получаем общий процент выполнения операции как среднее арифметическое
+            return (readInputStreamPercentage + compressionPercentage + writeOutputStreamPercentage) / 3;
+        }
     }
 }

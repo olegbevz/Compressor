@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace GZipCompressor
 {
+    /// <summary>
+    /// Агрументы события завершения операции
+    /// </summary>
     public class CompletedEventArgs : EventArgs
     {
         public static CompletedEventArgs Success(long inputFileSize, long outputFileSize)
@@ -29,17 +32,27 @@ namespace GZipCompressor
             Status = status;
             InputFileSize = inputFileSize;
             OutputFileSize = outputFileSize;
-
-            if (exceptions != null)
-                Exceptions = new List<Exception>(exceptions);
+            Exceptions = exceptions == null ? new List<Exception>() : new List<Exception>(exceptions);
         }
 
+        /// <summary>
+        /// Статус операции
+        /// </summary>
         public CompletionStatus Status { get; private set; }
 
+        /// <summary>
+        /// Размер исходного файла
+        /// </summary>
         public long InputFileSize { get; private set; }
 
+        /// <summary>
+        /// Размер преобразованного файла
+        /// </summary>
         public long OutputFileSize { get; private set; }
 
+        /// <summary>
+        /// Ошибки во время выполнения операции
+        /// </summary>
         public List<Exception> Exceptions { get; private set; }
     }
 }

@@ -167,7 +167,12 @@ namespace GZipCompressor
             var writeOutputStreamPercentage = localTotalBuffersCount == 0 ? 0 : (double)localWrittenBuffersCount / localTotalBuffersCount;
 
             // Получаем общий процент выполнения операции
-            return readInputStreamPercentage * compressionPercentage * writeOutputStreamPercentage;
+            return CalculateProgress(readInputStreamPercentage, compressionPercentage, writeOutputStreamPercentage);
         }
+
+        protected abstract double CalculateProgress(
+            double readInputStreamPercentage, 
+            double compressionPercentage, 
+            double writeOutputStreamPercentage);
     }
 }

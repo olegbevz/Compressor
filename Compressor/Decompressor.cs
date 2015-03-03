@@ -20,6 +20,8 @@ namespace GZipCompressor
 
         private const int DECOMPRESS_BUFFER_SIZE = 10 * 1024 * 1024;
 
+        private double lastProgress;
+
         protected override void ReadInputStream()
         {
             try
@@ -108,6 +110,28 @@ namespace GZipCompressor
                     bufferQueue.SetLastSubOrder(blockOrder, --bufferNumber);
                 }
             }
+        }
+        
+        protected override double CalculateProgress(
+            double readInputStreamPercentage,
+            double compressionPercentage,
+            double writeOutputStreamPercentage)
+        {
+            // Получаем общий процент выполнения операции умножая процент выполнения задач
+            var progress = readInputStreamPercentage * compressionPercentage * writeOutputStreamPercentage;
+
+            // Для предотвращения "колебания" процента выполнения в обратную сторону
+            // сравниваем процент выполнения с последним рассчитанным 
+            if (progress > lastProgress)
+            {
+                lastProgress = progress;
+            }
+            else
+            {
+                progress = lastProgress;
+            }
+
+            return progress;
         }
     }
 }
