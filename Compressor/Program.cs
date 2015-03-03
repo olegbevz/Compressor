@@ -96,7 +96,9 @@ namespace GZipCompressor
             {
                 case CompletionStatus.Successed:
                     Console.WriteLine("Operation completed successfully.");
-                    Console.WriteLine(string.Format(@"Time spent: {0}.", elapsedTime));
+                    Console.WriteLine(string.Format("Time spent: {0}.", elapsedTime));
+                    Console.WriteLine(string.Format("Input file size: {0} bytes.", args.InputFileSize));
+                    Console.WriteLine(string.Format("Output file size: {0} bytes.", args.OutputFileSize));
                     programResult = 0;
                     break;
                 case CompletionStatus.Cancelled:

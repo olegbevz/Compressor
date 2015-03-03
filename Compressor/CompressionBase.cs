@@ -26,6 +26,7 @@ namespace GZipCompressor
         protected int totalBuffersCount;
         protected int compressedBuffersCount;
         protected int writtenBuffersCount;
+        protected long writtenBytesCount;
 
         protected CompressionBase()
         {
@@ -80,6 +81,7 @@ namespace GZipCompressor
                                 outputStream.Flush();
 
                                 Interlocked.Increment(ref writtenBuffersCount);
+                                Interlocked.Add(ref writtenBytesCount, buffer.Length);
 
                                 // Размер буфера превышает ограничение сборщика мусора 8 Кб, 
                                 // необходимо вручную очистить данные буфера из Large Object Heap 
@@ -123,7 +125,7 @@ namespace GZipCompressor
                 }
                 else
                 {
-                    eventArgs = CompletedEventArgs.Success();
+                    eventArgs = CompletedEventArgs.Success(inputStreamLength, writtenBytesCount);
                 }
 
                 completedHandler.Invoke(this, eventArgs);
