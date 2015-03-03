@@ -118,16 +118,16 @@ namespace GZipCompressor
 
                         bufferQueueSemaphore.Wait();
                         bufferQueue.Enqueue(blockOrder, bufferNumber, buffer, nextBuffer.Length == 0);
-                        
-                        // Сообщаем об изменении процента выполнения операции
-                        Interlocked.Increment(ref totalBuffersCount);
-                        Interlocked.Increment(ref compressedBuffersCount);
-                        ReportProgress();
 
                         buffer = nextBuffer;
                         nextBuffer = new byte[DECOMPRESS_BUFFER_SIZE];
 
                         bufferNumber++;
+
+                        // Сообщаем об изменении процента выполнения операции
+                        Interlocked.Increment(ref totalBuffersCount);
+                        Interlocked.Increment(ref compressedBuffersCount);
+                        ReportProgress();
 
                         // Размер буфера превышает ограничение сборщика мусора 85000 байтов, 
                         // необходимо вручную очистить данные буфера из Large Object Heap 

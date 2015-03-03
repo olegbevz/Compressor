@@ -18,6 +18,9 @@ namespace GZipCompressor
             BlockSize = blockSize;
         }
 
+        /// <summary>
+        /// Размер шифруемого блока данных
+        /// </summary>
         public long BlockSize { get; private set; }
 
         protected override void ReadInputStream()

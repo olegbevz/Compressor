@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime;
 using System.Threading;
 
 namespace GZipCompressor
@@ -51,11 +49,24 @@ namespace GZipCompressor
             innerExceptions = new List<Exception>();
         }
 
+        /// <summary>
+        /// Событие изменения процента выполнения операции
+        /// </summary>
         public event EventHandler<ProgressChangedEventArgs> ProgressChanged;
+
+        /// <summary>
+        /// Событие завершения операции
+        /// </summary>
         public event EventHandler<CompletedEventArgs> Completed;
 
+        /// <summary>
+        /// Доступное количество потоков для преобразования блоков данных
+        /// </summary>
         public int ThreadsCount { get; private set; }
 
+        /// <summary>
+        /// Максимальное количество блоков данных, находящихся в очереди на запись
+        /// </summary>
         public int MaxQueueSize { get; private set; }
 
         public void Execute(string inputPath, string outputPath)
