@@ -21,6 +21,7 @@ namespace GZipCompressor
             try
             {
                 Console.CursorVisible = false;
+                Console.CancelKeyPress += OnConsoleCancelKeyPressed;
                 Console.WriteLine("GZip Compression Utility.");
                 if (args.Length != 3)
                 {
@@ -47,10 +48,10 @@ namespace GZipCompressor
                         return 1;
                 }
 
+                Console.WriteLine("Press Ctrl+C to cancel operation.");
+
                 cursorPositionLeftForProgress = Console.CursorLeft;
                 cursorPositionTopForProgress = Console.CursorTop;
-
-                Console.CancelKeyPress += OnConsoleCancelKeyPressed;
 
                 compressionUnit.ProgressChanged += OnProgressChanged;
                 compressionUnit.Completed += OnCompressorCompleted;
@@ -75,6 +76,7 @@ namespace GZipCompressor
             if (compressionUnit != null)
             {
                 compressionUnit.Cancel();
+                autoResetEvent.WaitOne();
             }
         }
 

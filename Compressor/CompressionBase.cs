@@ -93,9 +93,11 @@ namespace GZipCompressor
                             {
                                 bufferQueueSemaphore.Release();
 
+                                // Записываем массив байтов, полученный из очереди в файл
                                 outputStream.Write(buffer, 0, buffer.Length);
                                 outputStream.Flush();
 
+                                // Сообщаем обизменении проуента выполнения операции
                                 Interlocked.Increment(ref writtenBuffersCount);
                                 Interlocked.Add(ref writtenBytesCount, buffer.Length);
                                 ReportProgress();
@@ -109,18 +111,28 @@ namespace GZipCompressor
                         Thread.Sleep(THREAD_SLEEP_INTERVAL);
                     }
                 }
+
+                // Удаляем выходной файл если была выполнена отмена операции
+                DeleteOutputFileIfCanceled();
+
+                // Сообщаем о завершении операции
+                ReportCompletion();
             }
             catch (Exception ex)
             {
                 innerExceptions.Add(ex);
             }
-
-            ReportCompletion();
         }
         
         public void Cancel()
         {
             cancellationPending = true;
+        }
+
+        private void DeleteOutputFileIfCanceled()
+        {
+            if (cancellationPending && File.Exists(outputPath))
+                File.Delete(outputPath);
         }
 
         private void ReportCompletion()

@@ -24,7 +24,7 @@ namespace GZipCompressor
         {
             try
             {
-                Debug.WriteLine("Read input stream thread with id " + Thread.CurrentThread.ManagedThreadId + " was started .");
+                Debug.WriteLine("Read input stream thread with id " + Thread.CurrentThread.ManagedThreadId + " was started.");
                 
                 var inputFileInfo = new FileInfo(inputPath);
                 inputStreamLength = inputFileInfo.Length;
