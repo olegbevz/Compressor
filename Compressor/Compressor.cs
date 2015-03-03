@@ -8,20 +8,12 @@ namespace GZipCompressor
 {
     public class Compressor : CompressionBase
     {
-        private const long DEFAULT_BLOCK_SIZE = 10 * 1024 * 1024;
-
         public Compressor(
             long blockSize = DEFAULT_BLOCK_SIZE, 
             int threadsCount = DEFAULT_THREADS_COUNT,
-            int maxQueueSize = DEFAULT_QUEUE_MAX_SIZE) : base(threadsCount, maxQueueSize)
+            int maxQueueSize = DEFAULT_QUEUE_MAX_SIZE) : base(blockSize, threadsCount, maxQueueSize)
         {
-            BlockSize = blockSize;
         }
-
-        /// <summary>
-        /// Размер шифруемого блока данных
-        /// </summary>
-        public long BlockSize { get; private set; }
 
         protected override void ReadInputStream()
         {

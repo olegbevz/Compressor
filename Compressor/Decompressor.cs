@@ -17,13 +17,15 @@ namespace GZipCompressor
 
         private const int READ_INPUT_STREAM_BUFFER_SIZE = 1024 * 1024;
 
-        private const int DECOMPRESS_BUFFER_SIZE = 10 * 1024 * 1024;
-
+        /// <summary>
+        /// Последнее рассчитаноое значение процента выполнения задачи
+        /// </summary>
         private double lastProgress;
 
         public Decompressor(
-            int threadsCount = DEFAULT_THREADS_COUNT,
-            int maxQueueSize = DEFAULT_QUEUE_MAX_SIZE) : base(threadsCount, maxQueueSize)
+             long blockSize = DEFAULT_BLOCK_SIZE,
+             int threadsCount = DEFAULT_THREADS_COUNT,
+             int maxQueueSize = DEFAULT_QUEUE_MAX_SIZE) : base(blockSize, threadsCount, maxQueueSize)
         {
         }
 
@@ -100,12 +102,12 @@ namespace GZipCompressor
                 {
                     int bufferNumber = 0;
 
-                    byte[] buffer = new byte[DECOMPRESS_BUFFER_SIZE];
+                    byte[] buffer = new byte[BlockSize];
                     int bytesRead = compressStream.Read(buffer, 0, buffer.Length);
-                    if (bytesRead < DECOMPRESS_BUFFER_SIZE)
+                    if (bytesRead < BlockSize)
                         Array.Resize(ref buffer, bytesRead);
 
-                    byte[] nextBuffer = new byte[DECOMPRESS_BUFFER_SIZE];
+                    byte[] nextBuffer = new byte[BlockSize];
                     while (bytesRead > 0)
                     {
                         if (cancellationPending)
@@ -113,14 +115,14 @@ namespace GZipCompressor
 
                         bytesRead = compressStream.Read(nextBuffer, 0, nextBuffer.Length);
 
-                        if (bytesRead < DECOMPRESS_BUFFER_SIZE)
+                        if (bytesRead < BlockSize)
                             Array.Resize(ref nextBuffer, bytesRead);
 
                         bufferQueueSemaphore.Wait();
                         bufferQueue.Enqueue(blockOrder, bufferNumber, buffer, nextBuffer.Length == 0);
 
                         buffer = nextBuffer;
-                        nextBuffer = new byte[DECOMPRESS_BUFFER_SIZE];
+                        nextBuffer = new byte[BlockSize];
 
                         bufferNumber++;
 

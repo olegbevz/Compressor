@@ -19,15 +19,19 @@ namespace GZipCompressor
         {
             try
             {
+                Console.WriteLine("GZip Compression Utility.");
+                Console.WriteLine();
+
                 Console.CursorVisible = false;
                 Console.CancelKeyPress += OnConsoleCancelKeyPressed;
-                Console.WriteLine("GZip Compression Utility.");
+                
                 if (args.Length != 3)
                 {
                     ShowHelp();
                     return 1;
                 }
 
+                // Поддержка относительных путей
                 var currentDirectory = Directory.GetCurrentDirectory();
                 var inputFileName = Path.Combine(currentDirectory, args[1]);
                 var ouitputFileName = Path.Combine(currentDirectory, args[2]);
@@ -60,13 +64,17 @@ namespace GZipCompressor
 
                 // Блокируем основной поток приложения до завершения операции.
                 autoResetEvent.WaitOne();
-                
+
                 return programResult;
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 return 1;
+            }
+            finally
+            {
+                Console.CursorVisible = true;
             }
         }
 
@@ -120,8 +128,10 @@ namespace GZipCompressor
 
         private static void ShowHelp()
         {
-            Console.WriteLine("Compress file: Compressor.exe compress [source file name] [archive file name].");
-            Console.WriteLine("Decompress file: Compressor.exe decompress [archive file name] [source file name].");
+            Console.WriteLine("Compress file:");
+            Console.WriteLine("GZipCompressor.exe compress [source file name] [archive file name]");
+            Console.WriteLine("Decompress file:");
+            Console.WriteLine("GZipCompressor.exe decompress [archive file name] [source file name]");
         }
     }
 }

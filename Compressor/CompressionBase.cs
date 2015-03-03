@@ -10,13 +10,14 @@ namespace GZipCompressor
     {
         protected const int DEFAULT_THREADS_COUNT = 5;
         protected const int DEFAULT_QUEUE_MAX_SIZE = 10;
+        protected const long DEFAULT_BLOCK_SIZE = 10 * 1024 * 1024;
         private const int THREAD_SLEEP_INTERVAL = 100;
 
         protected string inputPath;
         protected string outputPath;
         protected volatile bool cancellationPending;
 
-        private readonly Thread readInputStreamThread;
+        private readonly Thread initialThread;
         private readonly Thread writeOutputStreamThread;
         protected readonly OrderedQueue<byte[]> bufferQueue;
         protected readonly Semaphore bufferQueueSemaphore;
@@ -32,13 +33,15 @@ namespace GZipCompressor
         protected long writtenBytesCount;
 
         protected CompressionBase(
+            long blockSize = DEFAULT_BLOCK_SIZE,
             int threadsCount = DEFAULT_THREADS_COUNT, 
             int maxQueueSize = DEFAULT_QUEUE_MAX_SIZE)
         {
+            BlockSize = blockSize;
             ThreadsCount = threadsCount;
             MaxQueueSize = maxQueueSize;
 
-            readInputStreamThread = new Thread(ReadInputStream);
+            initialThread = new Thread(ReadInputStream);
             writeOutputStreamThread = new Thread(WriteOutputStream);
 
             threadScheduler = new ThreadScheduler(threadsCount);
@@ -60,7 +63,12 @@ namespace GZipCompressor
         public event EventHandler<CompletedEventArgs> Completed;
 
         /// <summary>
-        /// Доступное количество потоков для преобразования блоков данных
+        /// Размер блока данных, который преобразуется в одном потоке
+        /// </summary>
+        public long BlockSize { get; private set; }
+
+        /// <summary>
+        /// Количество доступных потоков для преобразования блоков данных
         /// </summary>
         public int ThreadsCount { get; private set; }
 
@@ -72,12 +80,12 @@ namespace GZipCompressor
         public void Execute(string inputPath, string outputPath)
         {
             if (!File.Exists(inputPath))
-                throw new FileNotFoundException(inputPath);
+                throw new FileNotFoundException(string.Format("File not found: {0}.", inputPath));
 
             this.inputPath = inputPath;
             this.outputPath = outputPath;
 
-            readInputStreamThread.Start();
+            initialThread.Start();
             writeOutputStreamThread.Start();
         }
 
@@ -91,7 +99,7 @@ namespace GZipCompressor
 
                 using (var outputStream = File.OpenWrite(outputPath))
                 {
-                    while (readInputStreamThread.IsAlive || 
+                    while (initialThread.IsAlive || 
                         bufferQueue.Size > 0 || 
                         threadScheduler.CurrentThreadsCount > 0)
                     {
