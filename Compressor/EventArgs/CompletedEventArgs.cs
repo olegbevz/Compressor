@@ -1,10 +1,10 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 
 namespace GZipCompressor
 {
     /// <summary>
-    /// Агрументы события завершения операции
+    /// РђРіСЂСѓРјРµРЅС‚С‹ СЃРѕР±С‹С‚РёСЏ Р·Р°РІРµСЂС€РµРЅРёСЏ РѕРїРµСЂР°С†РёРё
     /// </summary>
     public class CompletedEventArgs : EventArgs
     {
@@ -36,22 +36,22 @@ namespace GZipCompressor
         }
 
         /// <summary>
-        /// Статус операции
+        /// РЎС‚Р°С‚СѓСЃ РѕРїРµСЂР°С†РёРё
         /// </summary>
         public CompletionStatus Status { get; private set; }
 
         /// <summary>
-        /// Размер исходного файла
+        /// Р Р°Р·РјРµСЂ РёСЃС…РѕРґРЅРѕРіРѕ С„Р°Р№Р»Р°
         /// </summary>
         public long InputFileSize { get; private set; }
 
         /// <summary>
-        /// Размер преобразованного файла
+        /// Р Р°Р·РјРµСЂ РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРЅРѕРіРѕ С„Р°Р№Р»Р°
         /// </summary>
         public long OutputFileSize { get; private set; }
 
         /// <summary>
-        /// Ошибки во время выполнения операции
+        /// РћС€РёР±РєРё РІРѕ РІСЂРµРјСЏ РІС‹РїРѕР»РЅРµРЅРёСЏ РѕРїРµСЂР°С†РёРё
         /// </summary>
         public List<Exception> Exceptions { get; private set; }
     }

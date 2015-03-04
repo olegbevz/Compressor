@@ -1,9 +1,9 @@
-using System;
+п»їusing System;
 
 namespace GZipCompressor
 {
     /// <summary>
-    /// Аргументы события изменения процента выполнения операции
+    /// РђСЂРіСѓРјРµРЅС‚С‹ СЃРѕР±С‹С‚РёСЏ РёР·РјРµРЅРµРЅРёСЏ РїСЂРѕС†РµРЅС‚Р° РІС‹РїРѕР»РЅРµРЅРёСЏ РѕРїРµСЂР°С†РёРё
     /// </summary>
     public class ProgressChangedEventArgs : EventArgs
     {
@@ -13,7 +13,7 @@ namespace GZipCompressor
         }
 
         /// <summary>
-        /// Процент выполнения операции
+        /// РџСЂРѕС†РµРЅС‚ РІС‹РїРѕР»РЅРµРЅРёСЏ РѕРїРµСЂР°С†РёРё
         /// </summary>
         public double ProgressPercentage { get; private set; }
     }
