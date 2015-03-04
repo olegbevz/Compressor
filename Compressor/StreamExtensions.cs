@@ -19,7 +19,7 @@ namespace GZipCompressor
         /// возвращает массив байтов без нулевых байтов в конце.
         /// </summary>
         /// <param name="memoryStream">Поток в памяти</param>
-        /// <returns></returns>
+        /// <returns>Массив байтов</returns>
         public static byte[] GetBufferWithoutZeroTail(this MemoryStream memoryStream)
         {
             memoryStream.Position = 0;
@@ -30,11 +30,11 @@ namespace GZipCompressor
         }
 
         /// <summary>
-        /// Поток начинается с указанного массива байтов.
+        /// Метод определяет начинается ли поток с указанного массива байтов.
         /// </summary>
         /// <param name="inputStream">Поток байтов</param>
         /// <param name="buffer">Массив байтов</param>
-        /// <returns>Поток байтов начи нается указанного массива байтов</returns>
+        /// <returns>Поток байтов начинается указанного массива байтов</returns>
         public static bool StartsWith(this Stream inputStream, byte[] buffer)
         {
             byte[] streamBuffer = new byte[buffer.Length];
@@ -51,7 +51,7 @@ namespace GZipCompressor
         }
 
         /// <summary>
-        /// Метод возвращает первое вхождение указанного массива байтов
+        /// Метод возвращает первое вхождение указанного массива байтов в потоке
         /// </summary>
         /// <param name="inputStream">Поток байтов</param>
         /// <param name="blockHeader">Массив байтов</param>
@@ -74,10 +74,8 @@ namespace GZipCompressor
                     return startPosition + arrayIndexes[0];
                 }
 
-                if (inputStream.Position == inputStream.Length)
-                    break;
-
-                inputStream.Position -= blockHeader.Length;
+                if (inputStream.Position < inputStream.Length)
+                    inputStream.Position -= blockHeader.Length;
             }
 
             return -1;
