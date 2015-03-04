@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -11,6 +12,7 @@ namespace GZipCompressor
         protected const int DEFAULT_THREADS_COUNT = 5;
         protected const int DEFAULT_QUEUE_MAX_SIZE = 10;
         protected const long DEFAULT_BLOCK_SIZE = 10 * 1024 * 1024;
+        private const long MIN_BLOCK_SIZE = 1024;
         private const int THREAD_SLEEP_INTERVAL = 100;
 
         protected string inputPath;
@@ -25,6 +27,7 @@ namespace GZipCompressor
         protected readonly ThreadScheduler threadScheduler;
         protected readonly object reportProgressLock = new object();
 
+        // Поля для рассчета процента выполнения задачи
         protected long inputStreamLength;
         protected long readenBytesCount;
         protected int totalBuffersCount;
@@ -37,6 +40,15 @@ namespace GZipCompressor
             int threadsCount = DEFAULT_THREADS_COUNT, 
             int maxQueueSize = DEFAULT_QUEUE_MAX_SIZE)
         {
+            if (blockSize < MIN_BLOCK_SIZE)
+                throw new ArgumentException("blockSize");
+
+            if (threadsCount <= 0)
+                throw new ArgumentException("threadsCount");
+
+            if (maxQueueSize <= 0)
+                throw new ArgumentException("maxQueueSize");
+            
             BlockSize = blockSize;
             ThreadsCount = threadsCount;
             MaxQueueSize = maxQueueSize;
@@ -45,10 +57,8 @@ namespace GZipCompressor
             writeOutputStreamThread = new Thread(WriteOutputStream);
 
             threadScheduler = new ThreadScheduler(threadsCount);
-
             bufferQueue = new OrderedQueue<byte[]>();
             bufferQueueSemaphore = new Semaphore(maxQueueSize);
-
             innerExceptions = new List<Exception>();
         }
 
@@ -82,8 +92,17 @@ namespace GZipCompressor
             if (!File.Exists(inputPath))
                 throw new FileNotFoundException(string.Format("File not found: {0}.", inputPath));
 
+            // Инициализируем внутренние поля перед выполнением операции
             this.inputPath = inputPath;
             this.outputPath = outputPath;
+            this.cancellationPending = false;
+
+            this.inputStreamLength = 0;
+            this.readenBytesCount = 0;
+            this.totalBuffersCount = 0;
+            this.compressedBuffersCount = 0;
+            this.writtenBuffersCount = 0;
+            this.writtenBytesCount = 0;
 
             initialThread.Start();
             writeOutputStreamThread.Start();
@@ -95,13 +114,14 @@ namespace GZipCompressor
         {
             try
             {
-                Debug.WriteLine("Write output stream thread was started " + Thread.CurrentThread.ManagedThreadId + " was started.");
+                Debug.WriteLine("Write output stream thread was started " + Thread.CurrentThread.ManagedThreadId +
+                                " was started.");
 
                 using (var outputStream = File.OpenWrite(outputPath))
                 {
-                    while (initialThread.IsAlive || 
-                        bufferQueue.Size > 0 || 
-                        threadScheduler.CurrentThreadsCount > 0)
+                    while (initialThread.IsAlive ||
+                           bufferQueue.Size > 0 ||
+                           threadScheduler.CurrentThreadsCount > 0)
                     {
                         if (cancellationPending)
                             break;
@@ -131,16 +151,18 @@ namespace GZipCompressor
                         Thread.Sleep(THREAD_SLEEP_INTERVAL);
                     }
                 }
-
+            }
+            catch (Exception ex)
+            {
+                innerExceptions.Add(ex);
+            }
+            finally
+            {
                 // Удаляем выходной файл если была выполнена отмена операции
                 DeleteOutputFileIfCanceled();
 
                 // Сообщаем о завершении операции
                 ReportCompletion();
-            }
-            catch (Exception ex)
-            {
-                innerExceptions.Add(ex);
             }
         }
         
@@ -174,6 +196,11 @@ namespace GZipCompressor
                 {
                     eventArgs = CompletedEventArgs.Success(inputStreamLength, writtenBytesCount);
                 }
+
+                // Освобождаем данные для последующих операций
+                innerExceptions.Clear();
+                bufferQueue.Clear();
+                bufferQueueSemaphore.ReleaseAll();
 
                 completedHandler.Invoke(this, eventArgs);
             }

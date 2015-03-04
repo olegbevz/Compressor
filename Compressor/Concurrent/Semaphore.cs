@@ -51,5 +51,13 @@ namespace GZipCompressor
         {
             return Interlocked.Decrement(ref counter);
         }
+
+        /// <summary>
+        /// Сборсить количество текущих значений
+        /// </summary>
+        public void ReleaseAll()
+        {
+            counter = 0;
+        }
     }
 }

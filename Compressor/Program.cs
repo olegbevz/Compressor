@@ -39,7 +39,7 @@ namespace GZipCompressor
                 switch (args[0])
                 {
                     case "compress":
-                        compressionUnit = new Compressor();
+                        compressionUnit = new Compressor(1024 * 1024, 20, 40);
                         Console.WriteLine("Compression started.");
                         break;
                     case "decompress":
