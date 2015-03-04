@@ -19,56 +19,79 @@ namespace GZipCompressor
 
         private readonly Dictionary<int, int> subOrderLimits 
             = new Dictionary<int, int>(); 
-
+        
         private int currentOrder;
 
         private int currentSubOrder;
 
         private readonly object innerLock = new object();
 
+        /// <summary>
+        /// Размер очереди
+        /// </summary>
         public int Size
         {
             get { return queueDictionary.Count; }
         }
 
+        /// <summary>
+        /// Занести элемент в очередь
+        /// </summary>
+        /// <param name="order">Порядковый номер элемента</param>
+        /// <param name="item">Добавляемый элемент</param>
         public void Enqueue(int order, T item)
         {
             Enqueue(order, 0, item, true);
         }
 
+        /// <summary>
+        /// Занести элемент в очередь
+        /// </summary>
+        /// <param name="order">Основной порядковый номер элемента</param>
+        /// <param name="subOrder">Второстепенный порядковый номер</param>
+        /// <param name="item">Добавляемый элемент</param>
+        /// <param name="lastSubOrder">
+        /// Указанный второстепенный порядковый номер является последним
+        /// для основного порядкового номера
+        /// </param>
         public void Enqueue(int order, int subOrder, T item, bool lastSubOrder = false)
         {
-            var queueOrder = new QueueOrder(order, subOrder);
-
-            if (queueDictionary.ContainsKey(queueOrder))
-                throw new Exception("Item with the same order already exists in queue.");
-
-            if (order < currentOrder)
-                throw new Exception("Item with the same order already have been in queue and was dequeued.");
-
-            if (order == currentOrder && subOrder < currentSubOrder)
-                throw new Exception("Item with the same order already have been in queue and was dequeued.");
-
-            if (lastSubOrder && order == currentOrder && subOrder < currentSubOrder)
-                throw new Exception("Item with sith this sub order is not the last.");
-
             lock (innerLock)
             {
+                var queueOrder = new QueueOrder(order, subOrder);
+
+                if (queueDictionary.ContainsKey(queueOrder))
+                    throw new Exception("Item with the same order already exists in queue.");
+
+                if (order < currentOrder)
+                    throw new Exception("Item with the same order already have been in queue and was dequeued.");
+
+                if (order == currentOrder && subOrder < currentSubOrder)
+                    throw new Exception("Item with the same order already have been in queue and was dequeued.");
+
+                if (lastSubOrder && subOrderLimits.ContainsKey(order))
+                    throw new Exception("Last sub order was already set.");
+            
                 if (lastSubOrder)
                     subOrderLimits[order] = subOrder;
 
                 queueDictionary.Add(queueOrder, item);
-            }
 
-            Debug.WriteLine(string.Format("OrderedQueue: an item with order {0} {1} was enqueued. Current queue size {2}.", queueOrder.Order, queueOrder.SubOrder, Size));
+                Debug.WriteLine(string.Format("OrderedQueue: an item with order {0} was enqueued. Current queue size {1}.", queueOrder, Size));
+            }
         }
 
+        /// <summary>
+        /// Получить элемент из очереди
+        /// </summary>
+        /// <param name="item">Полученный из очереди элемент</param>
+        /// <returns>Признак успешного получения элемента</returns>
         public bool TryDequeue(out T item)
         {
-            var queueOrder = new QueueOrder(currentOrder, currentSubOrder);
-
             lock (innerLock)
             {
+                var queueOrder = new QueueOrder(currentOrder, currentSubOrder);
+
                 if (queueDictionary.TryGetValue(queueOrder, out item))
                 {
                     queueDictionary.Remove(queueOrder);
@@ -83,7 +106,7 @@ namespace GZipCompressor
                         Interlocked.Increment(ref currentSubOrder);
                     }
 
-                    Debug.WriteLine(string.Format("OrderedQueue: an item with order {0} {1} was dequeued. Current queue size {2}.", queueOrder.Order, queueOrder.SubOrder, Size));
+                    Debug.WriteLine(string.Format("OrderedQueue: an item with order {0} was dequeued. Current queue size {1}.", queueOrder, Size));
 
                     return true;
                 }
@@ -93,6 +116,24 @@ namespace GZipCompressor
             return false;
         }
 
+        /// <summary>
+        /// Очистка элементов из очереди
+        /// </summary>
+        public void Clear()
+        {
+            lock (innerLock)
+            {
+                currentOrder = 0;
+                currentSubOrder = 0;
+
+                subOrderLimits.Clear();
+                queueDictionary.Clear();
+            }
+        }
+
+        /// <summary>
+        /// Составной порядковый номер элемента в очереди
+        /// </summary>
         private struct QueueOrder
         {
             public QueueOrder(int order, int subOrder = 0)
@@ -101,7 +142,14 @@ namespace GZipCompressor
                 SubOrder = subOrder;
             }
 
+            /// <summary>
+            /// Основной порядковый номер
+            /// </summary>
             public int Order;
+
+            /// <summary>
+            /// Второстепенный порядковый номер
+            /// </summary>
             public int SubOrder;
 
             public override string ToString()

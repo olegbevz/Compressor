@@ -31,7 +31,7 @@ namespace GZipCompressor
                     return 1;
                 }
 
-                // Поддержка относительных путей
+                // Поддержка относительных путей к файлам
                 var currentDirectory = Directory.GetCurrentDirectory();
                 var inputFileName = Path.Combine(currentDirectory, args[1]);
                 var ouitputFileName = Path.Combine(currentDirectory, args[2]);
