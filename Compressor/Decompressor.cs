@@ -38,9 +38,6 @@ namespace GZipCompressor
                 using (var inputStream = File.OpenRead(inputPath))
                 {
                     inputStreamLength = inputStream.Length;
-                    readenBytesCount = 0;
-
-                    int blockOrder = 0;
 
                     // Если файл не начинается со стандартного заголовка, значит архив был создан с помощью сторонней программы.
                     // В этом случае разбить файл на отдельные части не удастся, выполняем распаковку архива в одном потоке.
@@ -51,6 +48,7 @@ namespace GZipCompressor
                     }
                     else
                     {
+                        int blockOrder = 0;
                         while (inputStream.Position < inputStream.Length)
                         {
                             if (cancellationPending)

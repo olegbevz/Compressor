@@ -23,7 +23,6 @@ namespace GZipCompressor
                 
                 var inputFileInfo = new FileInfo(inputPath);
                 inputStreamLength = inputFileInfo.Length;
-                readenBytesCount = 0;
                 totalBuffersCount = (int)Math.Ceiling((double)inputFileInfo.Length / BlockSize);
 
                 for (int i = 0; i < totalBuffersCount; i++)

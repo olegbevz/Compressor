@@ -19,11 +19,11 @@ namespace GZipCompressor
         {
             try
             {
-                Console.WriteLine("GZip Compression Utility.");
-                Console.WriteLine();
-
                 Console.CursorVisible = false;
                 Console.CancelKeyPress += OnConsoleCancelKeyPressed;
+
+                Console.WriteLine("GZip Compression Utility.");
+                Console.WriteLine();
                 
                 if (args.Length != 3)
                 {
@@ -31,15 +31,10 @@ namespace GZipCompressor
                     return 1;
                 }
 
-                // Поддержка относительных путей к файлам
-                var currentDirectory = Directory.GetCurrentDirectory();
-                var inputFileName = Path.Combine(currentDirectory, args[1]);
-                var ouitputFileName = Path.Combine(currentDirectory, args[2]);
-
                 switch (args[0])
                 {
                     case "compress":
-                        compressionUnit = new Compressor(1024 * 1024, 20, 40);
+                        compressionUnit = new Compressor();
                         Console.WriteLine("Compression started.");
                         break;
                     case "decompress":
@@ -51,15 +46,24 @@ namespace GZipCompressor
                         return 1;
                 }
 
+                // Считываем пути к исходному и выходному файлу
+                var currentDirectory = Directory.GetCurrentDirectory();
+                var inputFileName = Path.Combine(currentDirectory, args[1]);
+                var ouitputFileName = Path.Combine(currentDirectory, args[2]);
+
                 Console.WriteLine("Press Ctrl+C to cancel operation.");
 
+                // Запоминаем положение курсора на консоли
                 cursorPositionLeftForProgress = Console.CursorLeft;
                 cursorPositionTopForProgress = Console.CursorTop;
 
                 compressionUnit.ProgressChanged += OnProgressChanged;
-                compressionUnit.Completed += OnCompressorCompleted;
+                compressionUnit.Completed += OnCompleted;
 
+                // Запускаем секундомер для отсчета времени
                 stopWatch.Start();
+
+                // Запускаем операцию
                 compressionUnit.Execute(inputFileName, ouitputFileName);
 
                 // Блокируем основной поток приложения до завершения операции.
@@ -93,7 +97,7 @@ namespace GZipCompressor
             Console.WriteLine(string.Format("{0:F3} %", args.ProgressPercentage * 100));
         }
 
-        private static void OnCompressorCompleted(object sender, CompletedEventArgs args)
+        private static void OnCompleted(object sender, CompletedEventArgs args)
         {
             var elapsedTime = stopWatch.Elapsed;
             stopWatch.Stop();

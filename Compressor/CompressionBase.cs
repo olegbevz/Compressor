@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using ThreadState = System.Threading.ThreadState;
 
 namespace GZipCompressor
 {
@@ -89,20 +90,16 @@ namespace GZipCompressor
 
         public void Execute(string inputPath, string outputPath)
         {
+            if (initialThread.ThreadState != ThreadState.Unstarted ||
+                writeOutputStreamThread.ThreadState != ThreadState.Unstarted)
+                throw new Exception("This instance is already used to execute the operation.");
+
             if (!File.Exists(inputPath))
                 throw new FileNotFoundException(string.Format("File not found: {0}.", inputPath));
 
-            // Инициализируем внутренние поля перед выполнением операции
             this.inputPath = inputPath;
             this.outputPath = outputPath;
             this.cancellationPending = false;
-
-            this.inputStreamLength = 0;
-            this.readenBytesCount = 0;
-            this.totalBuffersCount = 0;
-            this.compressedBuffersCount = 0;
-            this.writtenBuffersCount = 0;
-            this.writtenBytesCount = 0;
 
             initialThread.Start();
             writeOutputStreamThread.Start();
@@ -119,9 +116,9 @@ namespace GZipCompressor
 
                 using (var outputStream = File.OpenWrite(outputPath))
                 {
-                    while (initialThread.IsAlive ||
-                           bufferQueue.Size > 0 ||
-                           threadScheduler.CurrentThreadsCount > 0)
+                    // Запись считается завершенной, если завершился основной поток, не выполняются отдельные потоки 
+                    // по преобразованию блоков данных и в очереди на запись отсутвуют данные
+                    while (initialThread.IsAlive || threadScheduler.CurrentThreadsCount > 0 || bufferQueue.Size > 0)
                     {
                         if (cancellationPending)
                             break;
