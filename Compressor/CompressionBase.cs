@@ -152,6 +152,7 @@ namespace GZipCompressor
             catch (Exception ex)
             {
                 innerExceptions.Add(ex);
+                Cancel();
             }
             finally
             {
@@ -170,8 +171,15 @@ namespace GZipCompressor
 
         private void DeleteOutputFileIfCanceled()
         {
-            if (cancellationPending && File.Exists(outputPath))
-                File.Delete(outputPath);
+            try
+            {
+                if (cancellationPending && File.Exists(outputPath))
+                    File.Delete(outputPath);
+            }
+            catch (Exception ex)
+            {
+                innerExceptions.Add(ex);
+            }
         }
 
         private void ReportCompletion()

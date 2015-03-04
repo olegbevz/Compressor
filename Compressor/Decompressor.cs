@@ -80,7 +80,6 @@ namespace GZipCompressor
             catch (Exception ex)
             {
                 innerExceptions.Add(ex);
-
                 Cancel();
             }
         }
@@ -92,48 +91,56 @@ namespace GZipCompressor
         /// <param name="blockOrder">Порядок блока</param>
         private void DecompressBlock(long streamStartPosition, int blockOrder)
         {
-            using (var inputStream = File.OpenRead(inputPath))
+            try
             {
-                inputStream.Seek(streamStartPosition, SeekOrigin.Begin);
-
-                using (var compressStream = new GZipStream(inputStream, CompressionMode.Decompress, true))
+                using (var inputStream = File.OpenRead(inputPath))
                 {
-                    int bufferNumber = 0;
+                    inputStream.Seek(streamStartPosition, SeekOrigin.Begin);
 
-                    byte[] buffer = new byte[BlockSize];
-                    int bytesRead = compressStream.Read(buffer, 0, buffer.Length);
-                    if (bytesRead < BlockSize)
-                        Array.Resize(ref buffer, bytesRead);
-
-                    byte[] nextBuffer = new byte[BlockSize];
-                    while (bytesRead > 0)
+                    using (var compressStream = new GZipStream(inputStream, CompressionMode.Decompress, true))
                     {
-                        if (cancellationPending)
-                            break;
+                        int bufferNumber = 0;
 
-                        bytesRead = compressStream.Read(nextBuffer, 0, nextBuffer.Length);
-
+                        byte[] buffer = new byte[BlockSize];
+                        int bytesRead = compressStream.Read(buffer, 0, buffer.Length);
                         if (bytesRead < BlockSize)
-                            Array.Resize(ref nextBuffer, bytesRead);
+                            Array.Resize(ref buffer, bytesRead);
 
-                        bufferQueueSemaphore.Wait();
-                        bufferQueue.Enqueue(blockOrder, bufferNumber, buffer, nextBuffer.Length == 0);
+                        byte[] nextBuffer = new byte[BlockSize];
+                        while (bytesRead > 0)
+                        {
+                            if (cancellationPending)
+                                break;
 
-                        buffer = nextBuffer;
-                        nextBuffer = new byte[BlockSize];
+                            bytesRead = compressStream.Read(nextBuffer, 0, nextBuffer.Length);
 
-                        bufferNumber++;
+                            if (bytesRead < BlockSize)
+                                Array.Resize(ref nextBuffer, bytesRead);
 
-                        // Сообщаем об изменении процента выполнения операции
-                        Interlocked.Increment(ref totalBuffersCount);
-                        Interlocked.Increment(ref compressedBuffersCount);
-                        ReportProgress();
+                            bufferQueueSemaphore.Wait();
+                            bufferQueue.Enqueue(blockOrder, bufferNumber, buffer, nextBuffer.Length == 0);
 
-                        // Размер буфера превышает ограничение сборщика мусора 85000 байтов, 
-                        // необходимо вручную очистить данные буфера из Large Object Heap 
-                        GC.Collect();
+                            buffer = nextBuffer;
+                            nextBuffer = new byte[BlockSize];
+
+                            bufferNumber++;
+
+                            // Сообщаем об изменении процента выполнения операции
+                            Interlocked.Increment(ref totalBuffersCount);
+                            Interlocked.Increment(ref compressedBuffersCount);
+                            ReportProgress();
+
+                            // Размер буфера превышает ограничение сборщика мусора 85000 байтов, 
+                            // необходимо вручную очистить данные буфера из Large Object Heap 
+                            GC.Collect();
+                        }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                innerExceptions.Add(ex);
+                Cancel();
             }
         }
         
